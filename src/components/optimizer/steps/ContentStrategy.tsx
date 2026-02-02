@@ -48,8 +48,6 @@ export function ContentStrategy() {
   const crawlRunIdRef = useRef(0);
 
   const fetchSitemapText = async (targetUrl: string): Promise<string> => {
-    const supabaseUrl = getSupabaseUrl();
-    const supabaseAnonKey = getSupabaseAnonKey();
     const trimmed = targetUrl.trim();
 
     const fetchWithTimeout = async (url: string, init: RequestInit, ms: number): Promise<Response> => {
@@ -68,56 +66,16 @@ export function ContentStrategy() {
       }
     };
 
-    // Primary: /api/proxy (works in preview + production)
-    const proxyUrl = `/api/proxy?url=${encodeURIComponent(trimmed)}`;
-    try {
-      const resp = await fetchWithTimeout(proxyUrl, { method: "GET" }, 45000);
-      const text = await resp.text();
-      if (!resp.ok) {
-        throw new Error(`Proxy fetch-sitemap failed (${resp.status}): ${text.slice(0, 200)}`);
-      }
-      return text;
-    } catch (proxyErr) {
-      console.warn("[Sitemap] /api/proxy failed, trying Supabase fetch-sitemap as fallback", proxyErr);
+    // ✅ SOTA fix: use first-party endpoint.
+    // - Preview: handled by Vite middleware (vite.config.ts)
+    // - Production: handled by Cloudflare Pages Function (functions/api/fetch-sitemap.ts)
+    const localUrl = `/api/fetch-sitemap?url=${encodeURIComponent(trimmed)}`;
+    const resp = await fetchWithTimeout(localUrl, { method: "GET" }, 55000);
+    const text = await resp.text();
+    if (!resp.ok) {
+      throw new Error(`fetch-sitemap failed (${resp.status}): ${text.slice(0, 200)}`);
     }
-
-    // Fallback: external Supabase edge function if configured
-    if (supabaseUrl && supabaseAnonKey) {
-      const fnUrl = `${supabaseUrl.replace(/\/$/, "")}/functions/v1/fetch-sitemap?url=${encodeURIComponent(
-        trimmed
-      )}`;
-
-      const resp = await fetchWithTimeout(
-        fnUrl,
-        {
-          method: "GET",
-          headers: {
-            apikey: supabaseAnonKey,
-            Authorization: `Bearer ${supabaseAnonKey}`,
-          },
-        },
-        45000
-      );
-
-      const contentType = resp.headers.get("content-type") || "";
-      const text = await resp.text();
-      if (!resp.ok) {
-        throw new Error(`Supabase fetch-sitemap failed (${resp.status}): ${text.slice(0, 200)}`);
-      }
-
-      if (contentType.includes("application/json")) {
-        try {
-          const json = JSON.parse(text);
-          return json?.content ?? text;
-        } catch {
-          return text;
-        }
-      }
-
-      return text;
-    }
-
-    throw new Error("Failed to fetch sitemap (proxy failed and Supabase is not configured)");
+    return text;
   };
 
   const handleGenerateContentPlan = () => {
