@@ -3,21 +3,21 @@
 // Uses Supabase Edge Functions for CORS-free API calls
 // ============================================================
 
-import { supabase, isSupabaseConfigured, getSupabaseUrl } from '@/integrations/supabase/client';
-
-function getSupabaseAnonKey(): string | null {
-  const key = (import.meta as any)?.env?.VITE_SUPABASE_ANON_KEY;
-  return key ? String(key) : null;
-}
+import {
+  supabase,
+  isSupabaseConfigured,
+  getSupabaseAnonKey,
+  getSupabaseUrl,
+} from '@/integrations/supabase/client';
 
 function isLovableHost(): boolean {
   if (typeof window === 'undefined') return false;
-  const host = window.location.hostname;
+  const host = String(window.location.hostname || '').toLowerCase();
   return (
     host === 'lovable.app' ||
-    host.endsWith('.lovable.app') ||
+    host.endsWith('lovable.app') ||
     host === 'lovableproject.com' ||
-    host.endsWith('.lovableproject.com')
+    host.endsWith('lovableproject.com')
   );
 }
 

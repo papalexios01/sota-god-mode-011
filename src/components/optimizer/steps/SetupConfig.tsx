@@ -1,7 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useOptimizerStore } from "@/lib/store";
 import { createNeuronWriterService } from "@/lib/sota/NeuronWriterService";
-import { getSupabaseUrl, isSupabaseConfigured } from "@/integrations/supabase/client";
+import {
+  clearSupabaseRuntimeConfig,
+  getSupabaseAnonKey,
+  getSupabaseConfigSource,
+  getSupabaseUrl,
+  isSupabaseConfigured,
+  setSupabaseRuntimeConfig,
+} from "@/integrations/supabase/client";
 import { 
   Key, Globe, User, Building, Image, UserCircle, 
   Sparkles, MapPin, Check, AlertCircle, ExternalLink,
@@ -52,6 +59,15 @@ export function SetupConfig() {
   const [showCustomOpenRouter, setShowCustomOpenRouter] = useState(false);
   const [showCustomGroq, setShowCustomGroq] = useState(false);
 
+  const [supabaseUrlInput, setSupabaseUrlInput] = useState('');
+  const [supabaseAnonKeyInput, setSupabaseAnonKeyInput] = useState('');
+  const [savingSupabase, setSavingSupabase] = useState(false);
+
+  useEffect(() => {
+    setSupabaseUrlInput(getSupabaseUrl() ?? '');
+    setSupabaseAnonKeyInput(getSupabaseAnonKey() ?? '');
+  }, []);
+
   // Fetch NeuronWriter projects when API key changes
   const fetchNeuronWriterProjects = useCallback(async (apiKey: string) => {
     if (!apiKey || apiKey.length < 10) {
@@ -100,6 +116,34 @@ export function SetupConfig() {
       return () => clearTimeout(debounceTimer);
     }
   }, [config.enableNeuronWriter, config.neuronWriterApiKey, fetchNeuronWriterProjects]);
+
+  const handleSaveSupabaseConfig = useCallback(async () => {
+    setSavingSupabase(true);
+    try {
+      setSupabaseRuntimeConfig({ url: supabaseUrlInput, anonKey: supabaseAnonKeyInput });
+      setNeuronWriterError(null);
+
+      if (config.enableNeuronWriter && config.neuronWriterApiKey) {
+        await fetchNeuronWriterProjects(config.neuronWriterApiKey);
+      }
+    } finally {
+      setSavingSupabase(false);
+    }
+  }, [
+    supabaseUrlInput,
+    supabaseAnonKeyInput,
+    config.enableNeuronWriter,
+    config.neuronWriterApiKey,
+    fetchNeuronWriterProjects,
+    setNeuronWriterError,
+  ]);
+
+  const handleClearSupabaseConfig = useCallback(() => {
+    clearSupabaseRuntimeConfig();
+    setSupabaseUrlInput('');
+    setSupabaseAnonKeyInput('');
+    setNeuronWriterError(null);
+  }, [setNeuronWriterError]);
 
   const handleVerifyWordPress = async () => {
     if (!config.wpUrl || !config.wpUsername || !config.wpAppPassword) {
@@ -458,6 +502,54 @@ export function SetupConfig() {
               type="password"
               placeholder="Enter NeuronWriter key..."
             />
+
+            {/* Supabase runtime config (for Lovable preview hosts without build-time env vars) */}
+            <div className="p-4 bg-background/50 border border-border rounded-xl space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-sm font-medium text-foreground">
+                  Supabase Edge Function (hyper-worker)
+                </label>
+                <span className="text-xs text-muted-foreground">
+                  Source:{" "}
+                  <code className="text-primary">{getSupabaseConfigSource()}</code>
+                </span>
+              </div>
+
+              <InputField
+                label="Supabase URL"
+                value={supabaseUrlInput}
+                onChange={setSupabaseUrlInput}
+                placeholder="https://xxxx.supabase.co"
+              />
+              <InputField
+                label="Supabase anon key"
+                value={supabaseAnonKeyInput}
+                onChange={setSupabaseAnonKeyInput}
+                type="password"
+                placeholder="eyJ..."
+              />
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={handleSaveSupabaseConfig}
+                  disabled={savingSupabase || !supabaseUrlInput.trim() || !supabaseAnonKeyInput.trim()}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {savingSupabase ? "Saving…" : "Save"}
+                </button>
+                <button
+                  onClick={handleClearSupabaseConfig}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                >
+                  Clear
+                </button>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Lovable preview hosts don’t have Cloudflare Pages Functions (so <code>/api/neuronwriter</code> 404s). Pasting your Supabase URL + anon
+                key here lets the app call your Supabase Edge Function <code>hyper-worker</code>. (Anon key is public.)
+              </p>
+            </div>
             
             {/* Project Selection */}
             {config.neuronWriterApiKey && (
@@ -502,16 +594,15 @@ export function SetupConfig() {
                           <p className="text-xs mt-1 text-red-300/80">
                             {(() => {
                               const hasSupabaseUrl = !!getSupabaseUrl();
-                              const hasSupabaseAnon = !!(import.meta as any)?.env?.VITE_SUPABASE_ANON_KEY;
+                              const hasSupabaseAnon = !!getSupabaseAnonKey();
                               const hasSupabaseClient = isSupabaseConfigured();
 
-                              // If Supabase env vars are missing, be explicit about what needs to be configured.
+                              // If Supabase config is missing, be explicit about what needs to be configured.
                               if (!hasSupabaseUrl) {
                                 return (
                                   <>
-                                    In the Lovable preview, Cloudflare Pages Functions (e.g. <code>/api/neuronwriter</code>) won’t exist.
-                                    To use NeuronWriter here, set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> so the app
-                                    can call your Supabase Edge Function <code>hyper-worker</code>, then reload.
+                                    This preview can’t use <code>/api/neuronwriter</code>. Paste your Supabase URL + anon key in the “Supabase Edge Function”
+                                    box above, click <strong>Save</strong>, then hit <strong>Refresh</strong>.
                                   </>
                                 );
                               }
@@ -519,8 +610,8 @@ export function SetupConfig() {
                               if (!hasSupabaseAnon || !hasSupabaseClient) {
                                 return (
                                   <>
-                                    <code>VITE_SUPABASE_URL</code> is present, but <code>VITE_SUPABASE_ANON_KEY</code> is missing (or not injected into
-                                    this build). Add the anon key, then reload.
+                                    Supabase URL is set, but the anon key is missing (or not applied yet). Paste the anon key above and click
+                                    <strong>Save</strong>.
                                   </>
                                 );
                               }
