@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useOptimizerStore } from "@/lib/store";
 import { createNeuronWriterService } from "@/lib/sota/NeuronWriterService";
+import { getSupabaseUrl, isSupabaseConfigured } from "@/integrations/supabase/client";
 import { 
   Key, Globe, User, Building, Image, UserCircle, 
   Sparkles, MapPin, Check, AlertCircle, ExternalLink,
@@ -489,10 +490,30 @@ export function SetupConfig() {
                       <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="font-medium">{neuronWriterError}</p>
-                        {neuronWriterError.includes('proxy not available') && (
+                        {neuronWriterError.toLowerCase().includes("proxy") && (
                           <p className="text-xs mt-1 text-red-300/80">
-                            NeuronWriter requires a backend proxy due to CORS restrictions. 
-                            Enable Lovable Cloud or deploy to Cloudflare Pages for this feature.
+                            {(() => {
+                              const hasSupabase = isSupabaseConfigured() || !!getSupabaseUrl();
+
+                              // If Supabase env vars are missing, be explicit about what needs to be configured.
+                              if (!hasSupabase) {
+                                return (
+                                  <>
+                                    This app needs your Supabase env vars to call the edge function <code>hyper-worker</code>.
+                                    Set <code>VITE_SUPABASE_URL</code> (and preferably <code>VITE_SUPABASE_ANON_KEY</code>) in the environment
+                                    where this frontend is built, then reload.
+                                  </>
+                                );
+                              }
+
+                              // Supabase is present but the proxy is still failing.
+                              return (
+                                <>
+                                  Supabase looks configured, but the proxy call is failing. Double-check the edge function name is
+                                  <code>hyper-worker</code> and it’s deployed in your Supabase project.
+                                </>
+                              );
+                            })()}
                           </p>
                         )}
                       </div>

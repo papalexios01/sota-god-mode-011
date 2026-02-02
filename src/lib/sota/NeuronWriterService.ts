@@ -107,7 +107,8 @@ export class NeuronWriterService {
     // No proxy available
     return { 
       success: false, 
-      error: 'NeuronWriter proxy not available. Enable Lovable Cloud or deploy to production for NeuronWriter integration.'
+      error:
+        'NeuronWriter proxy not available in this build. Configure VITE_SUPABASE_URL (and optionally VITE_SUPABASE_ANON_KEY) so the app can call your Supabase Edge Function (hyper-worker).'
     };
   }
 
@@ -233,7 +234,11 @@ export class NeuronWriterService {
       });
 
       if (response.status === 404) {
-        return { success: false, error: 'Cloudflare proxy not available' };
+        return {
+          success: false,
+          error:
+            'Cloudflare proxy not available (404). Either deploy the Cloudflare Pages Function at /api/neuronwriter, or configure VITE_SUPABASE_URL so the app can use your Supabase Edge Function (hyper-worker).',
+        };
       }
 
       const result = await response.json();
