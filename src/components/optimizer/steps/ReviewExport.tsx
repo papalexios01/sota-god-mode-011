@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useOptimizerStore } from "@/lib/store";
+import { useState, useCallback } from "react";
+import { useOptimizerStore, type ContentItem } from "@/lib/store";
 import { 
   FileText, Check, X, AlertCircle, Trash2, 
   Sparkles, ArrowUpDown, Eye, Brain,
@@ -7,8 +7,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createOrchestrator, globalPerformanceTracker, type GeneratedContent } from "@/lib/sota";
-import { ContentPreviewModal } from "../ContentPreviewModal";
-import { GenerationProgressModal } from "../GenerationProgressModal";
+import { ContentViewerPanel } from "../ContentViewerPanel";
+import { EnhancedGenerationModal, type GenerationStep } from "../EnhancedGenerationModal";
 import { ContentIntelligenceDashboard } from "../ContentIntelligenceDashboard";
 
 export function ReviewExport() {
@@ -23,11 +23,26 @@ export function ReviewExport() {
   const [sortField, setSortField] = useState<'title' | 'type' | 'status'>('title');
   const [sortAsc, setSortAsc] = useState(true);
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const [previewContent, setPreviewContent] = useState<GeneratedContent | null>(null);
+  
+  // Content Viewer State
+  const [viewingItem, setViewingItem] = useState<ContentItem | null>(null);
+  const [generatedContents, setGeneratedContents] = useState<Record<string, GeneratedContent>>({});
+  
+  // Generation State
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
-  const [currentPhase, setCurrentPhase] = useState('');
+  const [currentItemIndex, setCurrentItemIndex] = useState(0);
+  const [generationSteps, setGenerationSteps] = useState<GenerationStep[]>([]);
   const [generationError, setGenerationError] = useState<string | undefined>();
+  const [generatingItems, setGeneratingItems] = useState<Array<{
+    id: string;
+    title: string;
+    keyword: string;
+    status: 'pending' | 'generating' | 'completed' | 'error';
+    progress: number;
+    currentStep?: string;
+    error?: string;
+  }>>([]);
 
   const toggleSelect = (id: string) => {
     setSelectedItems(prev => 
@@ -43,13 +58,42 @@ export function ReviewExport() {
     }
   };
 
+  // Create default steps
+  const createDefaultSteps = (): GenerationStep[] => [
+    { id: 'research', label: 'SERP Analysis', description: 'Analyzing top-ranking content', status: 'pending', icon: null },
+    { id: 'videos', label: 'YouTube Discovery', description: 'Finding relevant video content', status: 'pending', icon: null },
+    { id: 'references', label: 'Reference Gathering', description: 'Collecting authoritative sources', status: 'pending', icon: null },
+    { id: 'outline', label: 'Content Outline', description: 'Structuring the article', status: 'pending', icon: null },
+    { id: 'content', label: 'AI Generation', description: 'Creating comprehensive content', status: 'pending', icon: null },
+    { id: 'enhance', label: 'Content Enhancement', description: 'Optimizing for readability', status: 'pending', icon: null },
+    { id: 'links', label: 'Internal Linking', description: 'Adding strategic links', status: 'pending', icon: null },
+    { id: 'validate', label: 'Quality Validation', description: 'Ensuring content standards', status: 'pending', icon: null },
+    { id: 'schema', label: 'Schema Generation', description: 'Creating structured data', status: 'pending', icon: null },
+  ];
+
+  const updateStep = useCallback((stepId: string, status: GenerationStep['status'], message?: string) => {
+    setGenerationSteps(prev => prev.map(s => 
+      s.id === stepId ? { ...s, status, message } : s
+    ));
+  }, []);
+
   const handleGenerate = async () => {
     const toGenerate = contentItems.filter(i => selectedItems.includes(i.id) && i.status === 'pending');
     if (toGenerate.length === 0) return;
 
+    // Initialize generation state
     setIsGenerating(true);
     setGenerationProgress(0);
+    setCurrentItemIndex(0);
     setGenerationError(undefined);
+    setGenerationSteps(createDefaultSteps());
+    setGeneratingItems(toGenerate.map(item => ({
+      id: item.id,
+      title: item.title,
+      keyword: item.primaryKeyword,
+      status: 'pending',
+      progress: 0,
+    })));
 
     const orchestrator = createOrchestrator({
       apiKeys: {
@@ -59,7 +103,6 @@ export function ReviewExport() {
         openrouterApiKey: config.openrouterApiKey,
         groqApiKey: config.groqApiKey,
         serperApiKey: config.serperApiKey,
-        // Pass custom model IDs for OpenRouter and Groq
         openrouterModelId: config.openrouterModelId,
         groqModelId: config.groqModelId,
       },
@@ -73,22 +116,83 @@ export function ReviewExport() {
     });
 
     let completed = 0;
-    for (const item of toGenerate) {
+    for (let i = 0; i < toGenerate.length; i++) {
+      const item = toGenerate[i];
+      setCurrentItemIndex(i);
+      
+      // Reset steps for new item
+      setGenerationSteps(createDefaultSteps());
+      
+      // Update item status
       updateContentItem(item.id, { status: 'generating' });
-      setCurrentPhase(`Generating: ${item.title}`);
+      setGeneratingItems(prev => prev.map(gi => 
+        gi.id === item.id ? { ...gi, status: 'generating', progress: 0 } : gi
+      ));
       
       try {
+        // Simulate step progression with onProgress callback
+        let stepIndex = 0;
+        const stepIds = ['research', 'videos', 'references', 'outline', 'content', 'enhance', 'links', 'validate', 'schema'];
+        
         const result = await orchestrator.generateContent({
           keyword: item.primaryKeyword,
           title: item.title,
-          onProgress: (msg) => setCurrentPhase(msg),
+          onProgress: (msg) => {
+            // Parse progress message and update steps
+            const lowerMsg = msg.toLowerCase();
+            
+            if (lowerMsg.includes('serp') || lowerMsg.includes('research') || lowerMsg.includes('analyzing')) {
+              updateStep('research', 'running', msg);
+            } else if (lowerMsg.includes('youtube') || lowerMsg.includes('video')) {
+              updateStep('research', 'completed');
+              updateStep('videos', 'running', msg);
+            } else if (lowerMsg.includes('reference') || lowerMsg.includes('source') || lowerMsg.includes('citation')) {
+              updateStep('videos', 'completed');
+              updateStep('references', 'running', msg);
+            } else if (lowerMsg.includes('outline') || lowerMsg.includes('structure')) {
+              updateStep('references', 'completed');
+              updateStep('outline', 'running', msg);
+            } else if (lowerMsg.includes('generat') || lowerMsg.includes('writing') || lowerMsg.includes('creating')) {
+              updateStep('outline', 'completed');
+              updateStep('content', 'running', msg);
+            } else if (lowerMsg.includes('enhance') || lowerMsg.includes('optimi')) {
+              updateStep('content', 'completed');
+              updateStep('enhance', 'running', msg);
+            } else if (lowerMsg.includes('link') || lowerMsg.includes('internal')) {
+              updateStep('enhance', 'completed');
+              updateStep('links', 'running', msg);
+            } else if (lowerMsg.includes('valid') || lowerMsg.includes('quality') || lowerMsg.includes('check')) {
+              updateStep('links', 'completed');
+              updateStep('validate', 'running', msg);
+            } else if (lowerMsg.includes('schema') || lowerMsg.includes('structured')) {
+              updateStep('validate', 'completed');
+              updateStep('schema', 'running', msg);
+            }
+            
+            // Update item progress
+            stepIndex = Math.min(stepIndex + 1, stepIds.length - 1);
+            const itemProgress = Math.round(((stepIndex + 1) / stepIds.length) * 100);
+            setGeneratingItems(prev => prev.map(gi => 
+              gi.id === item.id ? { ...gi, progress: itemProgress, currentStep: msg } : gi
+            ));
+          },
         });
+
+        // Mark all steps complete
+        setGenerationSteps(prev => prev.map(s => ({ ...s, status: 'completed' })));
+
+        // Store the generated content
+        setGeneratedContents(prev => ({ ...prev, [item.id]: result }));
 
         updateContentItem(item.id, { 
           status: 'completed', 
           content: result.content,
           wordCount: result.metrics.wordCount,
         });
+
+        setGeneratingItems(prev => prev.map(gi => 
+          gi.id === item.id ? { ...gi, status: 'completed', progress: 100 } : gi
+        ));
 
         globalPerformanceTracker.recordMetrics({
           timestamp: Date.now(),
@@ -103,8 +207,12 @@ export function ReviewExport() {
           keyword: item.primaryKeyword,
         });
       } catch (error) {
-        updateContentItem(item.id, { status: 'error', error: String(error) });
-        setGenerationError(String(error));
+        const errorMsg = String(error);
+        updateContentItem(item.id, { status: 'error', error: errorMsg });
+        setGeneratingItems(prev => prev.map(gi => 
+          gi.id === item.id ? { ...gi, status: 'error', error: errorMsg } : gi
+        ));
+        setGenerationError(errorMsg);
       }
 
       completed++;
@@ -122,6 +230,19 @@ export function ReviewExport() {
     if (aVal > bVal) return sortAsc ? 1 : -1;
     return 0;
   });
+
+  // Content viewer navigation
+  const viewingIndex = viewingItem ? sortedItems.findIndex(i => i.id === viewingItem.id) : -1;
+  const handlePreviousItem = () => {
+    if (viewingIndex > 0) {
+      setViewingItem(sortedItems[viewingIndex - 1]);
+    }
+  };
+  const handleNextItem = () => {
+    if (viewingIndex < sortedItems.length - 1) {
+      setViewingItem(sortedItems[viewingIndex + 1]);
+    }
+  };
 
   const stats = {
     total: contentItems.length,
@@ -323,14 +444,20 @@ export function ReviewExport() {
                   <td className="p-4">
                     <div className="flex items-center gap-2">
                       <button 
-                        className="p-1.5 text-muted-foreground hover:text-foreground rounded"
-                        title="Preview"
+                        onClick={() => setViewingItem(item)}
+                        className={cn(
+                          "p-1.5 rounded transition-all",
+                          item.status === 'completed' 
+                            ? "text-primary hover:text-primary hover:bg-primary/20" 
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        )}
+                        title={item.status === 'completed' ? "View Content" : "Preview (content not generated yet)"}
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button 
                         onClick={() => removeContentItem(item.id)}
-                        className="p-1.5 text-muted-foreground hover:text-destructive rounded"
+                        className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-all"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -351,22 +478,29 @@ export function ReviewExport() {
         </div>
       )}
 
-      {/* Generation Progress Modal */}
-      <GenerationProgressModal
+      {/* Enhanced Generation Modal */}
+      <EnhancedGenerationModal
         isOpen={isGenerating}
         onClose={() => setIsGenerating(false)}
-        keyword={contentItems.find(i => i.status === 'generating')?.primaryKeyword || ''}
-        steps={[]}
-        progress={generationProgress}
-        currentPhase={currentPhase}
+        items={generatingItems}
+        currentItemIndex={currentItemIndex}
+        overallProgress={generationProgress}
+        steps={generationSteps}
         error={generationError}
       />
 
-      {/* Content Preview Modal */}
-      <ContentPreviewModal
-        content={previewContent}
-        onClose={() => setPreviewContent(null)}
-      />
+      {/* Content Viewer Panel */}
+      {viewingItem && (
+        <ContentViewerPanel
+          item={viewingItem}
+          generatedContent={generatedContents[viewingItem.id] || null}
+          onClose={() => setViewingItem(null)}
+          onPrevious={handlePreviousItem}
+          onNext={handleNextItem}
+          hasPrevious={viewingIndex > 0}
+          hasNext={viewingIndex < sortedItems.length - 1}
+        />
+      )}
     </div>
   );
 }
