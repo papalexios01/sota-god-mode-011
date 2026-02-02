@@ -490,18 +490,37 @@ export function SetupConfig() {
                       <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="font-medium">{neuronWriterError}</p>
-                        {neuronWriterError.toLowerCase().includes("proxy") && (
+                        {(() => {
+                          const lower = neuronWriterError.toLowerCase();
+                          return (
+                            lower.includes("proxy") ||
+                            lower.includes("supabase") ||
+                            lower.includes("vite_supabase") ||
+                            lower.includes("hyper-worker")
+                          );
+                        })() && (
                           <p className="text-xs mt-1 text-red-300/80">
                             {(() => {
-                              const hasSupabase = isSupabaseConfigured() || !!getSupabaseUrl();
+                              const hasSupabaseUrl = !!getSupabaseUrl();
+                              const hasSupabaseAnon = !!(import.meta as any)?.env?.VITE_SUPABASE_ANON_KEY;
+                              const hasSupabaseClient = isSupabaseConfigured();
 
                               // If Supabase env vars are missing, be explicit about what needs to be configured.
-                              if (!hasSupabase) {
+                              if (!hasSupabaseUrl) {
                                 return (
                                   <>
-                                    This app needs your Supabase env vars to call the edge function <code>hyper-worker</code>.
-                                    Set <code>VITE_SUPABASE_URL</code> (and preferably <code>VITE_SUPABASE_ANON_KEY</code>) in the environment
-                                    where this frontend is built, then reload.
+                                    In the Lovable preview, Cloudflare Pages Functions (e.g. <code>/api/neuronwriter</code>) won’t exist.
+                                    To use NeuronWriter here, set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> so the app
+                                    can call your Supabase Edge Function <code>hyper-worker</code>, then reload.
+                                  </>
+                                );
+                              }
+
+                              if (!hasSupabaseAnon || !hasSupabaseClient) {
+                                return (
+                                  <>
+                                    <code>VITE_SUPABASE_URL</code> is present, but <code>VITE_SUPABASE_ANON_KEY</code> is missing (or not injected into
+                                    this build). Add the anon key, then reload.
                                   </>
                                 );
                               }
