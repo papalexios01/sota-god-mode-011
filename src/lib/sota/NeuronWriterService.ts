@@ -5,6 +5,28 @@
 
 import { supabase, isSupabaseConfigured, getSupabaseUrl } from '@/integrations/supabase/client';
 
+function getSupabaseAnonKey(): string | null {
+  const key = (import.meta as any)?.env?.VITE_SUPABASE_ANON_KEY;
+  return key ? String(key) : null;
+}
+
+function isLovableHost(): boolean {
+  if (typeof window === 'undefined') return false;
+  const host = window.location.hostname;
+  return (
+    host === 'lovable.app' ||
+    host.endsWith('.lovable.app') ||
+    host === 'lovableproject.com' ||
+    host.endsWith('.lovableproject.com')
+  );
+}
+
+function canUseCloudflarePagesProxy(): boolean {
+  if (typeof window === 'undefined') return false;
+  // Cloudflare Pages Functions won't be available on Lovable preview/published hosts.
+  return !isLovableHost();
+}
+
 export interface NeuronWriterProject {
   id: string;
   name: string;
@@ -93,14 +115,23 @@ export class NeuronWriterService {
       return this.makeSupabaseRequest<T>(endpoint, method, body);
     }
 
-    // Method 2: Direct URL fetch to Supabase function (fallback for production)
+    // Method 2: Direct URL fetch to Supabase function (fallback when supabase client isn't initialized)
     const supabaseUrl = getSupabaseUrl();
     if (supabaseUrl) {
-      return this.makeDirectProxyRequest<T>(supabaseUrl, endpoint, method, body);
+      const anonKey = getSupabaseAnonKey();
+      if (!anonKey) {
+        return {
+          success: false,
+          error:
+            'VITE_SUPABASE_URL is set but VITE_SUPABASE_ANON_KEY is missing. Add the anon key so the app can call your Supabase Edge Function (hyper-worker).',
+        };
+      }
+
+      return this.makeDirectProxyRequest<T>(supabaseUrl, anonKey, endpoint, method, body);
     }
 
     // Method 3: Check for Cloudflare Pages function
-    if (typeof window !== 'undefined' && !window.location.hostname.includes('lovable.app')) {
+    if (canUseCloudflarePagesProxy()) {
       return this.makeCloudflareRequest<T>(endpoint, method, body);
     }
 
@@ -108,7 +139,7 @@ export class NeuronWriterService {
     return { 
       success: false, 
       error:
-        'NeuronWriter proxy not available in this build. Configure VITE_SUPABASE_URL (and optionally VITE_SUPABASE_ANON_KEY) so the app can call your Supabase Edge Function (hyper-worker).'
+        'NeuronWriter proxy not available on this host. Configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY so the app can call your Supabase Edge Function (hyper-worker).'
     };
   }
 
@@ -156,6 +187,7 @@ export class NeuronWriterService {
    */
   private async makeDirectProxyRequest<T>(
     supabaseUrl: string,
+    anonKey: string,
     endpoint: string,
     method: string,
     body?: Record<string, unknown>
@@ -169,6 +201,9 @@ export class NeuronWriterService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // Supabase Edge Functions require an API key on direct HTTP calls.
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
           'X-NeuronWriter-Key': this.apiKey,
         },
         body: JSON.stringify({
