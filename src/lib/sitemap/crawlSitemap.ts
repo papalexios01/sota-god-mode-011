@@ -83,18 +83,6 @@ function extractLocs(xmlDoc: XMLDocument, rawXml: string): string[] {
     out.push(url);
   }
 
-  if (out.length > 0) return out;
-
-  // Last resort: if the response is HTML/text (blocked page, rendered sitemap, etc.)
-  // extract *any* URLs so we still return something usable.
-  const urlRegex = /https?:\/\/[^\s"'<>]+/g;
-  const urlMatches = rawXml.match(urlRegex) || [];
-  for (const u of urlMatches) {
-    const url = u.trim();
-    if (!url) continue;
-    out.push(url);
-  }
-
   return out;
 }
 

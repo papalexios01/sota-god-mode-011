@@ -56,7 +56,10 @@ export function ContentStrategy() {
     const supabaseController = new AbortController();
 
     const fetchViaProxy = async (): Promise<string> => {
-      const proxyUrl = `/api/fetch-sitemap?url=${encodeURIComponent(trimmed)}`;
+      // In Lovable preview (Vite dev server), Cloudflare Pages Functions (/api/fetch-sitemap)
+      // do NOT run. But /api/proxy is wired via Vite's dev proxy to allorigins.
+      // In production on Cloudflare Pages, /api/proxy is handled by functions/api/proxy.ts.
+      const proxyUrl = `/api/proxy?url=${encodeURIComponent(trimmed)}`;
       const timeoutId = window.setTimeout(() => proxyController.abort(), 30000);
       try {
         const resp = await fetch(proxyUrl, { method: "GET", signal: proxyController.signal });
