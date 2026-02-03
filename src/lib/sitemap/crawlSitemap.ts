@@ -111,10 +111,10 @@ export async function crawlSitemapUrls(
   fetchSitemapXml: (url: string, signal?: AbortSignal) => Promise<string>,
   options: CrawlSitemapOptions = {}
 ): Promise<string[]> {
-  const concurrency = Math.max(1, Math.min(options.concurrency ?? 8, 20));
+  const concurrency = Math.max(1, Math.min(options.concurrency ?? 10, 25));
   const maxSitemaps = options.maxSitemaps ?? 5000;
   const maxUrls = options.maxUrls ?? 500000;
-  const fetchTimeoutMs = Math.max(5000, options.fetchTimeoutMs ?? 70000);
+  const fetchTimeoutMs = Math.max(5000, options.fetchTimeoutMs ?? 30000);
 
   // ✅ Fast path: never waste time fetching obviously irrelevant sitemaps.
   // Some WP installs generate these very slowly (video/image/news) and they often contain no <loc> anyway.
