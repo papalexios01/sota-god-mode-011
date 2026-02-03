@@ -51,16 +51,41 @@ export interface NeuronWriterQuery {
   tags?: string[];
 }
 
+export interface NeuronWriterHeading {
+  text: string;
+  level: 'h2' | 'h3';
+  usage_pc: number;
+  sugg_usage?: [number, number];
+}
+
+export interface NeuronWriterEntity {
+  entity: string;
+  type?: string;
+  usage_pc: number;
+  sugg_usage?: [number, number];
+}
+
 export interface NeuronWriterAnalysis {
   query_id: string;
   keyword: string;
   status: string;
+  // Basic keywords (high priority)
   terms: NeuronWriterTerm[];
+  // Extended keywords (lower priority but still important)
+  termsExtended: NeuronWriterTerm[];
+  // Named entities (people, places, brands, etc.)
+  entities: NeuronWriterEntity[];
+  // Recommended headings
+  headingsH2: NeuronWriterHeading[];
+  headingsH3: NeuronWriterHeading[];
   terms_txt?: {
     title: string;
     content_basic: string;
     content_basic_w_ranges: string;
+    content_extended?: string;
     entities: string;
+    headings_h2?: string;
+    headings_h3?: string;
   };
   metrics?: {
     word_count: { median: number; target: number };
@@ -431,7 +456,7 @@ export class NeuronWriterService {
       };
     }
 
-    // Parse terms from the response
+    // Parse BASIC terms (high priority keywords)
     const terms: NeuronWriterTerm[] = [];
     if (data.terms?.content_basic) {
       data.terms.content_basic.forEach((t: any) => {
@@ -446,11 +471,71 @@ export class NeuronWriterService {
       });
     }
 
+    // Parse EXTENDED terms (additional keywords - important for comprehensive coverage)
+    const termsExtended: NeuronWriterTerm[] = [];
+    if (data.terms?.content_extended) {
+      data.terms.content_extended.forEach((t: any) => {
+        termsExtended.push({
+          term: t.t,
+          weight: t.usage_pc || 30,
+          frequency: t.sugg_usage?.[1] || 1,
+          type: t.usage_pc >= 50 ? 'recommended' : 'optional',
+          usage_pc: t.usage_pc,
+          sugg_usage: t.sugg_usage,
+        });
+      });
+    }
+
+    // Parse ENTITIES (named entities - people, brands, places, etc.)
+    const entities: NeuronWriterEntity[] = [];
+    if (data.terms?.entities) {
+      data.terms.entities.forEach((e: any) => {
+        entities.push({
+          entity: e.t,
+          type: e.type,
+          usage_pc: e.usage_pc || 30,
+          sugg_usage: e.sugg_usage,
+        });
+      });
+    }
+
+    // Parse H2 HEADINGS
+    const headingsH2: NeuronWriterHeading[] = [];
+    if (data.terms?.headings_h2) {
+      data.terms.headings_h2.forEach((h: any) => {
+        headingsH2.push({
+          text: h.t,
+          level: 'h2',
+          usage_pc: h.usage_pc || 30,
+          sugg_usage: h.sugg_usage,
+        });
+      });
+    }
+
+    // Parse H3 HEADINGS
+    const headingsH3: NeuronWriterHeading[] = [];
+    if (data.terms?.headings_h3) {
+      data.terms.headings_h3.forEach((h: any) => {
+        headingsH3.push({
+          text: h.t,
+          level: 'h3',
+          usage_pc: h.usage_pc || 20,
+          sugg_usage: h.sugg_usage,
+        });
+      });
+    }
+
+    console.log(`[NeuronWriter] Parsed: ${terms.length} basic terms, ${termsExtended.length} extended terms, ${entities.length} entities, ${headingsH2.length} H2s, ${headingsH3.length} H3s`);
+
     const analysis: NeuronWriterAnalysis = {
       query_id: queryId,
       keyword: data.keyword || '',
       status: data.status,
       terms,
+      termsExtended,
+      entities,
+      headingsH2,
+      headingsH3,
       terms_txt: data.terms_txt,
       metrics: data.metrics,
       ideas: data.ideas,
@@ -594,22 +679,53 @@ export class NeuronWriterService {
   }
 
   /**
-   * Format terms for AI prompt
+   * Format ALL terms, entities, and headings for AI prompt - COMPREHENSIVE
    */
-  formatTermsForPrompt(terms: NeuronWriterTerm[]): string {
+  formatTermsForPrompt(terms: NeuronWriterTerm[], analysis?: NeuronWriterAnalysis): string {
     const required = terms.filter(t => t.type === 'required');
     const recommended = terms.filter(t => t.type === 'recommended');
 
-    let prompt = '### REQUIRED TERMS (must include):\n';
+    let prompt = '### 🔴 REQUIRED KEYWORDS (MUST include with specified frequency):\n';
     prompt += required.map(t => {
       const range = t.sugg_usage ? `${t.sugg_usage[0]}-${t.sugg_usage[1]}x` : `${t.frequency}x`;
-      return `- ${t.term}: ${range}`;
+      return `- "${t.term}": use ${range}`;
     }).join('\n');
 
-    prompt += '\n\n### RECOMMENDED TERMS (try to include):\n';
-    prompt += recommended.slice(0, 15).map(t => `- ${t.term}`).join('\n');
+    prompt += '\n\n### 🟡 RECOMMENDED KEYWORDS (include naturally):\n';
+    prompt += recommended.slice(0, 20).map(t => `- "${t.term}"`).join('\n');
+
+    // Add extended keywords if available
+    if (analysis?.termsExtended && analysis.termsExtended.length > 0) {
+      prompt += '\n\n### 🟢 EXTENDED KEYWORDS (use where relevant):\n';
+      prompt += analysis.termsExtended.slice(0, 25).map(t => `- "${t.term}"`).join('\n');
+    }
+
+    // Add entities if available
+    if (analysis?.entities && analysis.entities.length > 0) {
+      prompt += '\n\n### 🔵 NAMED ENTITIES (mention these specific names/brands/places):\n';
+      prompt += analysis.entities.slice(0, 15).map(e => `- "${e.entity}"${e.type ? ` (${e.type})` : ''}`).join('\n');
+    }
+
+    // Add H2 heading recommendations
+    if (analysis?.headingsH2 && analysis.headingsH2.length > 0) {
+      prompt += '\n\n### 📌 RECOMMENDED H2 HEADINGS (use these or similar):\n';
+      prompt += analysis.headingsH2.slice(0, 10).map(h => `- ${h.text}`).join('\n');
+    }
+
+    // Add H3 heading recommendations
+    if (analysis?.headingsH3 && analysis.headingsH3.length > 0) {
+      prompt += '\n\n### 📎 RECOMMENDED H3 SUBHEADINGS (use these or similar):\n';
+      prompt += analysis.headingsH3.slice(0, 12).map(h => `- ${h.text}`).join('\n');
+    }
 
     return prompt;
+  }
+
+  /**
+   * Get full analysis summary for logging
+   */
+  getAnalysisSummary(analysis: NeuronWriterAnalysis): string {
+    return `Keywords: ${analysis.terms.length} basic + ${analysis.termsExtended?.length || 0} extended | Entities: ${analysis.entities?.length || 0} | Headings: ${analysis.headingsH2?.length || 0} H2 + ${analysis.headingsH3?.length || 0} H3`;
   }
 }
 

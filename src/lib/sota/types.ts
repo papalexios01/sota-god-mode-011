@@ -2,7 +2,9 @@
 // SOTA ENTERPRISE TYPES - WP Content Optimizer Pro
 // ============================================================
 
-import type { NeuronWriterAnalysis } from './NeuronWriterService';
+import type { NeuronWriterAnalysis, NeuronWriterHeading, NeuronWriterEntity } from './NeuronWriterService';
+
+export type { NeuronWriterAnalysis, NeuronWriterHeading, NeuronWriterEntity };
 
 export type AIModel = 'gemini' | 'openai' | 'anthropic' | 'openrouter' | 'groq';
 

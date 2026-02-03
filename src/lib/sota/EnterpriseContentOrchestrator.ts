@@ -126,7 +126,8 @@ export class EnterpriseContentOrchestrator {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       const analysisRes = await service.getQueryAnalysis(queryId);
       if (analysisRes.success && analysisRes.analysis) {
-        this.log(`NeuronWriter: analysis ready (terms: ${analysisRes.analysis.terms?.length || 0})`);
+        const summary = service.getAnalysisSummary(analysisRes.analysis);
+        this.log(`NeuronWriter: analysis ready - ${summary}`);
         return { service, queryId, analysis: analysisRes.analysis };
       }
 
@@ -184,8 +185,9 @@ export class EnterpriseContentOrchestrator {
 
     const title = options.title || await this.generateTitle(options.keyword, serpAnalysis);
 
+    // Pass the FULL analysis to get all keywords, entities, and headings
     const neuronTermPrompt = neuron
-      ? neuron.service.formatTermsForPrompt(neuron.analysis.terms || [])
+      ? neuron.service.formatTermsForPrompt(neuron.analysis.terms || [], neuron.analysis)
       : undefined;
 
     const content = await this.generateMainContent(
