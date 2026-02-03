@@ -11,6 +11,8 @@ export type CrawlSitemapOptions = {
   maxUrls?: number;
   /** Hard cap per-sitemap fetch+parse time (ms). Prevents a single slow sitemap from stalling the whole crawl. */
   fetchTimeoutMs?: number;
+  /** Optional cancellation signal (e.g., user pressed “Stop”). */
+  signal?: AbortSignal;
   onProgress?: (p: SitemapCrawlProgress) => void;
   onUrlsBatch?: (newUrls: string[]) => void;
 };
@@ -106,7 +108,7 @@ function getSitemapKind(xmlDoc: XMLDocument): "index" | "urlset" | "unknown" {
  */
 export async function crawlSitemapUrls(
   entrySitemapUrl: string,
-  fetchSitemapXml: (url: string) => Promise<string>,
+  fetchSitemapXml: (url: string, signal?: AbortSignal) => Promise<string>,
   options: CrawlSitemapOptions = {}
 ): Promise<string[]> {
   const concurrency = Math.max(1, Math.min(options.concurrency ?? 8, 20));
@@ -114,10 +116,27 @@ export async function crawlSitemapUrls(
   const maxUrls = options.maxUrls ?? 500000;
   const fetchTimeoutMs = Math.max(5000, options.fetchTimeoutMs ?? 70000);
 
-  const withHardTimeout = async <T>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+  // ✅ Fast path: never waste time fetching obviously irrelevant sitemaps.
+  // Some WP installs generate these very slowly (video/image/news) and they often contain no <loc> anyway.
+  const isLowValueSitemap = (url: string) =>
+    /(?:^|\/)(?:video|image|news|author|tag|category|attachment|media)[\w.-]*sitemap\.xml\b/i.test(url);
+
+  const withHardTimeout = async <T>(
+    promise: Promise<T>,
+    ms: number,
+    label: string,
+    onTimeout?: () => void
+  ): Promise<T> => {
     let timeoutId: number | undefined;
     const timeout = new Promise<never>((_, reject) => {
-      timeoutId = window.setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`)), ms);
+      timeoutId = window.setTimeout(() => {
+        try {
+          onTimeout?.();
+        } catch {
+          // ignore
+        }
+        reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`));
+      }, ms);
     });
     try {
       return await Promise.race([promise, timeout]);
@@ -144,6 +163,9 @@ export async function crawlSitemapUrls(
   emitProgress();
 
   while (pending.length > 0) {
+    if (options.signal?.aborted) {
+      throw new Error("Crawl cancelled");
+    }
     if (visitedSitemaps.size >= maxSitemaps) break;
     if (discoveredUrls.size >= maxUrls) break;
 
@@ -162,8 +184,33 @@ export async function crawlSitemapUrls(
       batch.map(async (sitemap) => {
         emitProgress(sitemap);
 
+        const globalSignal = options.signal;
+        const perFetchController = new AbortController();
+        let onGlobalAbort: (() => void) | null = null;
+
         try {
-          const rawText = await withHardTimeout(fetchSitemapXml(sitemap), fetchTimeoutMs, "Sitemap fetch");
+          if (globalSignal?.aborted) {
+            perFetchController.abort();
+            throw new Error("Crawl cancelled");
+          }
+
+          if (globalSignal) {
+            onGlobalAbort = () => perFetchController.abort();
+            globalSignal.addEventListener("abort", onGlobalAbort, { once: true });
+          }
+
+          if (isLowValueSitemap(sitemap)) {
+            // eslint-disable-next-line no-console
+            console.info("[Sitemap Crawl] Skipped low-value sitemap:", sitemap);
+            return;
+          }
+
+          const rawText = await withHardTimeout(
+            fetchSitemapXml(sitemap, perFetchController.signal),
+            fetchTimeoutMs,
+            "Sitemap fetch",
+            () => perFetchController.abort()
+          );
           const xmlDoc = safeParseXml(rawText);
           const kind = getSitemapKind(xmlDoc);
           const locs = extractLocs(xmlDoc, rawText);
@@ -198,12 +245,18 @@ export async function crawlSitemapUrls(
             }
           }
         } catch (err) {
+          if (globalSignal?.aborted) {
+            throw err;
+          }
           // ✅ Enterprise robustness: one failing sitemap should not crash the entire crawl.
           // We mark it processed and continue with the rest of the queue.
           const msg = err instanceof Error ? err.message : String(err);
           // eslint-disable-next-line no-console
           console.warn("[Sitemap Crawl] Failed sitemap:", sitemap, msg);
         } finally {
+          if (globalSignal && onGlobalAbort) {
+            globalSignal.removeEventListener("abort", onGlobalAbort);
+          }
           processedSitemaps += 1;
           emitProgress();
         }

@@ -47,6 +47,7 @@ export function ContentStrategy() {
   const [crawlStatus, setCrawlStatus] = useState<string>("");
   const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set());
   const crawlRunIdRef = useRef(0);
+  const crawlAbortRef = useRef<AbortController | null>(null);
 
   // Filter to keep only blog post URLs (exclude images, feeds, categories, tags, etc.)
   const filterBlogPostUrls = (urls: string[]): string[] => {
@@ -101,7 +102,7 @@ export function ContentStrategy() {
   // Notes:
   // - In Lovable preview, Cloudflare Pages Functions + Vite middleware are not available.
   // - WordPress sitemaps can be large/slow to generate; timeouts must be realistic.
-  const fetchSitemapText = async (targetUrl: string): Promise<string> => {
+  const fetchSitemapText = async (targetUrl: string, externalSignal?: AbortSignal): Promise<string> => {
     const trimmed = targetUrl.trim();
     const errors: string[] = [];
 
@@ -117,8 +118,20 @@ export function ContentStrategy() {
     };
 
     // Helper for fetch with timeout
-    const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: number): Promise<Response> => {
+    const fetchWithTimeout = async (
+      url: string,
+      options: RequestInit,
+      timeoutMs: number,
+      signal?: AbortSignal
+    ): Promise<Response> => {
       const controller = new AbortController();
+      const onAbort = () => controller.abort();
+
+      if (signal) {
+        if (signal.aborted) controller.abort();
+        else signal.addEventListener("abort", onAbort, { once: true });
+      }
+
       const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
       try {
         const response = await fetch(url, { ...options, signal: controller.signal });
@@ -127,6 +140,8 @@ export function ContentStrategy() {
       } catch (e) {
         window.clearTimeout(timeoutId);
         throw e;
+      } finally {
+        if (signal) signal.removeEventListener("abort", onAbort);
       }
     };
 
@@ -148,7 +163,8 @@ export function ContentStrategy() {
               "Authorization": `Bearer ${anonKey}`,
             },
           },
-          timeoutMs
+          timeoutMs,
+          externalSignal
         );
 
         if (!response.ok) {
@@ -181,7 +197,8 @@ export function ContentStrategy() {
       const response = await fetchWithTimeout(
         trimmed,
         { method: "GET", headers: { "Accept": "application/xml, text/xml, */*" } },
-        20000
+        20000,
+        externalSignal
       );
 
       if (!response.ok) {
@@ -201,7 +218,7 @@ export function ContentStrategy() {
     try {
       console.log("[Sitemap] Strategy 3: allorigins.win proxy");
       const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(trimmed)}`;
-      const response = await fetchWithTimeout(proxyUrl, { method: "GET" }, 25000);
+      const response = await fetchWithTimeout(proxyUrl, { method: "GET" }, 25000, externalSignal);
       if (!response.ok) {
         errors.push(`allorigins: HTTP ${response.status}`);
       } else {
@@ -219,7 +236,7 @@ export function ContentStrategy() {
     try {
       console.log("[Sitemap] Strategy 4: corsproxy.io");
       const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(trimmed)}`;
-      const response = await fetchWithTimeout(proxyUrl, { method: "GET" }, 25000);
+      const response = await fetchWithTimeout(proxyUrl, { method: "GET" }, 25000, externalSignal);
       if (!response.ok) {
         errors.push(`corsproxy: HTTP ${response.status}`);
       } else {
@@ -288,6 +305,12 @@ export function ContentStrategy() {
   const handleCrawlSitemap = async () => {
     if (!sitemapUrl.trim()) return;
 
+     // Cancel any previous run immediately
+     crawlAbortRef.current?.abort();
+     const controller = new AbortController();
+     crawlAbortRef.current = controller;
+     const signal = controller.signal;
+
     const runId = (crawlRunIdRef.current += 1);
     setIsCrawling(true);
     setCrawledUrls([]);
@@ -328,6 +351,7 @@ export function ContentStrategy() {
         // Lower concurrency improves reliability when a site has many child sitemaps or slow generation.
         concurrency: 4,
         fetchTimeoutMs: 70000,
+        signal,
         onProgress: (p: SitemapCrawlProgress) => {
           if (crawlRunIdRef.current !== runId) return;
           setCrawlFoundCount(p.discoveredUrls);
@@ -357,6 +381,9 @@ export function ContentStrategy() {
           if (allUrls.length > 0) break;
           candidateErrors.push(`${candidate}: no URLs found`);
         } catch (e) {
+          if (signal.aborted) {
+            throw new Error("Crawl cancelled");
+          }
           const msg = e instanceof Error ? e.message : "Failed to crawl sitemap";
           candidateErrors.push(`${candidate}: ${msg}`);
         }
@@ -380,11 +407,32 @@ export function ContentStrategy() {
       setCrawlStatus(`Done • ${blogPostUrls.length.toLocaleString()} blog posts (filtered from ${allUrls.length.toLocaleString()} total)`);
       toast.success(`Found ${blogPostUrls.length} blog post URLs!`);
     } catch (error) {
+      if (signal.aborted || (error instanceof Error && /crawl cancelled/i.test(error.message))) {
+        if (crawlRunIdRef.current === runId) {
+          setCrawlStatus("Cancelled.");
+          toast.info("Crawl cancelled");
+        }
+        return;
+      }
       console.error("[Sitemap] Crawl error:", error);
       toast.error(error instanceof Error ? error.message : "Failed to crawl sitemap");
     } finally {
-      setIsCrawling(false);
+      if (crawlAbortRef.current === controller) {
+        crawlAbortRef.current = null;
+      }
+      if (crawlRunIdRef.current === runId) {
+        setIsCrawling(false);
+      }
     }
+  };
+
+  const cancelCrawl = () => {
+    // Invalidate all callbacks
+    crawlRunIdRef.current += 1;
+    crawlAbortRef.current?.abort();
+    crawlAbortRef.current = null;
+    setIsCrawling(false);
+    setCrawlStatus("Cancelled.");
   };
 
   const toggleUrlSelection = (url: string) => {
@@ -751,14 +799,14 @@ export function ContentStrategy() {
               />
             </div>
             <button
-              onClick={handleCrawlSitemap}
-              disabled={!sitemapUrl.trim() || isCrawling}
+              onClick={isCrawling ? cancelCrawl : handleCrawlSitemap}
+              disabled={!isCrawling && !sitemapUrl.trim()}
               className="w-full px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isCrawling ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Crawling… ({crawlFoundCount.toLocaleString()} URLs)
+                  Crawling… ({crawlFoundCount.toLocaleString()} URLs) • Click to stop
                 </>
               ) : (
                 <>
