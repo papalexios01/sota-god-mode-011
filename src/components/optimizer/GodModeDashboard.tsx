@@ -12,19 +12,22 @@ import {
   Zap, Play, Pause, Square, Settings, Activity, Clock,
   CheckCircle2, XCircle, AlertTriangle, Loader2, RefreshCw,
   BarChart3, FileText, ExternalLink, Trash2, ChevronDown,
-  ChevronUp, Filter, Calendar, Target, TrendingUp
+  ChevronUp, Filter, Calendar, Target, TrendingUp, Eye
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { GodModeConfigPanel } from './GodModeConfigPanel';
 import { GodModeActivityFeed } from './GodModeActivityFeed';
 import { GodModeQueuePanel } from './GodModeQueuePanel';
+import { GodModeContentPreview } from './GodModeContentPreview';
+import type { GodModeHistoryItem } from '@/lib/sota/GodModeTypes';
 
 export function GodModeDashboard() {
   const { state, isRunning, isPaused, start, stop, pause, resume } = useGodModeEngine();
   const { sitemapUrls, priorityUrls, priorityOnlyMode, setPriorityOnlyMode } = useOptimizerStore();
   const [showConfig, setShowConfig] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [previewItem, setPreviewItem] = useState<GodModeHistoryItem | null>(null);
 
   const handleStart = async () => {
     setIsStarting(true);
@@ -363,7 +366,13 @@ export function GodModeDashboard() {
                   
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-foreground truncate">
-                      {new URL(item.url).pathname.split('/').filter(Boolean).pop() || item.url}
+                      {(() => {
+                        try {
+                          return new URL(item.url).pathname.split('/').filter(Boolean).pop() || item.url;
+                        } catch {
+                          return item.url;
+                        }
+                      })()}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {new Date(item.timestamp).toLocaleString()}
@@ -372,12 +381,24 @@ export function GodModeDashboard() {
                     </div>
                   </div>
 
+                  {/* View Content Button - Always show if content exists */}
+                  {item.generatedContent && (
+                    <button
+                      onClick={() => setPreviewItem(item)}
+                      className="p-1.5 text-muted-foreground hover:text-primary rounded-lg hover:bg-muted/50 transition-colors"
+                      title="View generated content"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  )}
+
                   {item.wordPressUrl && (
                     <a
                       href={item.wordPressUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1 text-muted-foreground hover:text-primary"
+                      className="p-1.5 text-muted-foreground hover:text-green-400 rounded-lg hover:bg-muted/50 transition-colors"
+                      title="View on WordPress"
                     >
                       <ExternalLink className="w-4 h-4" />
                     </a>
@@ -398,6 +419,14 @@ export function GodModeDashboard() {
             or add priority URLs in "Gap Analysis" before starting God Mode.
           </div>
         </div>
+      )}
+
+      {/* Content Preview Modal */}
+      {previewItem && (
+        <GodModeContentPreview
+          item={previewItem}
+          onClose={() => setPreviewItem(null)}
+        />
       )}
     </div>
   );

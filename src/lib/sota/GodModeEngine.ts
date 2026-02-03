@@ -399,17 +399,31 @@ export class GodModeEngine {
       const qualityScore = content.qualityScore?.overall || 85;
       const wordCount = content.metrics?.wordCount || 0;
 
+      // Prepare generated content for storage (always store for review access)
+      const generatedContent = {
+        title: content.title || '',
+        content: content.content || '',
+        seoTitle: content.seoTitle || '',
+        metaDescription: content.metaDescription || '',
+        slug: this.getSlug(item.url),
+      };
+
       // Check quality threshold
       if (qualityScore < this.options.config.qualityThreshold) {
         this.log('warning', `⚠️ Below quality threshold`, `Score: ${qualityScore}/${this.options.config.qualityThreshold}`);
         
+        // Store content anyway for manual review/publishing
         this.addToHistory({
           url: item.url,
           action: 'skipped',
           qualityScore,
           processingTimeMs: processingTime,
+          wordCount,
           error: `Quality score ${qualityScore} below threshold ${this.options.config.qualityThreshold}`,
+          generatedContent, // Now stored for manual access!
         });
+        
+        this.log('info', `📄 Content saved for review`, `Click "View" in history to access generated content`);
         
         return;
       }
@@ -426,6 +440,7 @@ export class GodModeEngine {
           qualityScore,
           processingTimeMs: processingTime,
           wordCount,
+          generatedContent, // Store for review access
         });
       }
 

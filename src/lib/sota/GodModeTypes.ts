@@ -29,6 +29,14 @@ export interface GodModeHistoryItem {
   error?: string;
   processingTimeMs?: number;
   wordCount?: number;
+  // Store generated content for viewing/manual publishing
+  generatedContent?: {
+    title: string;
+    content: string;
+    seoTitle?: string;
+    metaDescription?: string;
+    slug?: string;
+  };
 }
 
 export interface GodModeStats {
