@@ -100,32 +100,58 @@ export function ContentStrategy() {
   const fetchSitemapText = async (targetUrl: string): Promise<string> => {
     const trimmed = targetUrl.trim();
 
-    const fetchWithTimeout = async (url: string, init: RequestInit, ms: number): Promise<Response> => {
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), ms);
-      try {
-        return await fetch(url, { ...init, signal: controller.signal });
-      } catch (e) {
-        // Normalize AbortError so users don't see "signal is aborted without reason"
-        if (e instanceof DOMException && e.name === "AbortError") {
-          throw new Error(`Request timed out after ${Math.round(ms / 1000)}s`);
-        }
-        throw e;
-      } finally {
-        window.clearTimeout(timeoutId);
-      }
-    };
+    // ✅ SOTA Enterprise-Grade: Use Supabase edge function for reliable CORS-free sitemap fetching
+    // This works in all environments: local dev, Lovable preview, and production
+    const supabaseUrl = getSupabaseUrl();
+    const anonKey = getSupabaseAnonKey();
 
-    // ✅ SOTA fix: use first-party endpoint.
-    // - Preview: handled by Vite middleware (vite.config.ts)
-    // - Production: handled by Cloudflare Pages Function (functions/api/fetch-sitemap.ts)
-    const localUrl = `/api/fetch-sitemap?url=${encodeURIComponent(trimmed)}`;
-    const resp = await fetchWithTimeout(localUrl, { method: "GET" }, 55000);
-    const text = await resp.text();
-    if (!resp.ok) {
-      throw new Error(`fetch-sitemap failed (${resp.status}): ${text.slice(0, 200)}`);
+    if (!supabaseUrl || !anonKey) {
+      throw new Error("Supabase not configured. Please configure Supabase in Setup to enable sitemap crawling.");
     }
-    return text;
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 55000);
+
+    try {
+      // Use the Supabase edge function for sitemap fetching
+      const response = await fetch(`${supabaseUrl}/functions/v1/fetch-sitemap`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": anonKey,
+          "Authorization": `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({ url: trimmed }),
+        signal: controller.signal,
+      });
+
+      window.clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Sitemap fetch failed (${response.status}): ${errorText.slice(0, 200)}`);
+      }
+
+      const data = await response.json();
+      
+      // Handle JSON response format from edge function
+      if (data.content) {
+        return data.content;
+      }
+      
+      // Fallback: if response is plain text/XML
+      if (typeof data === "string") {
+        return data;
+      }
+
+      throw new Error("Unexpected response format from sitemap fetcher");
+    } catch (e) {
+      window.clearTimeout(timeoutId);
+      if (e instanceof DOMException && e.name === "AbortError") {
+        throw new Error("Request timed out after 55s - sitemap may be too large or server unresponsive");
+      }
+      throw e;
+    }
   };
 
   const handleGenerateContentPlan = () => {
