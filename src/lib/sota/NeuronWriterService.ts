@@ -123,8 +123,21 @@ export interface NeuronWriterCompetitor {
 export class NeuronWriterService {
   private apiKey: string;
 
+  /**
+   * In-memory (per-session) cache to prevent duplicate query creation when
+   * NeuronWriter analysis is still processing (status: waiting / in progress).
+   */
+  private static queryCache = new Map<
+    string,
+    { id: string; keyword: string; status?: NeuronWriterQuery['status']; updatedAt?: number }
+  >();
+
   constructor(apiKey: string) {
     this.apiKey = apiKey.trim();
+  }
+
+  private static makeQueryCacheKey(projectId: string, keyword: string): string {
+    return `${projectId.trim()}::${keyword.toLowerCase().trim()}`;
   }
 
   /**
@@ -402,30 +415,72 @@ export class NeuronWriterService {
     keyword: string
   ): Promise<{ success: boolean; query?: NeuronWriterQuery; error?: string }> {
     console.log(`[NeuronWriter] Searching for existing query: "${keyword}" in project ${projectId}`);
-    
-    const listResult = await this.listQueries(projectId, { status: 'ready' });
-    
-    if (!listResult.success) {
-      return { success: false, error: listResult.error };
-    }
 
     const normalizedKeyword = keyword.toLowerCase().trim();
-    
+
+    // 0) Fast path: in-memory cache (prevents duplicate query creation on retries)
+    const cacheKey = NeuronWriterService.makeQueryCacheKey(projectId, keyword);
+    const cached = NeuronWriterService.queryCache.get(cacheKey);
+    if (cached?.id) {
+      console.log(
+        `[NeuronWriter] ♻️ Using cached query for "${keyword}" (ID: ${cached.id}, status: ${cached.status || 'unknown'})`
+      );
+      return {
+        success: true,
+        query: {
+          id: cached.id,
+          query: cached.id,
+          keyword: cached.keyword,
+          status: cached.status || 'waiting',
+        },
+      };
+    }
+
+    // 1) IMPORTANT: search across *all* statuses.
+    // Previously we only listed `ready` queries, which causes duplicates when a query exists
+    // but is still processing (waiting / in progress).
+    const statuses: Array<'ready' | 'waiting' | 'in progress'> = ['ready', 'waiting', 'in progress'];
+    const listResults = await Promise.all(
+      statuses.map((status) => this.listQueries(projectId, { status }))
+    );
+
+    const errors = listResults.filter((r) => !r.success).map((r) => r.error).filter(Boolean) as string[];
+    const queries = listResults.flatMap((r) => (r.success ? r.queries || [] : []));
+
+    if (queries.length === 0 && errors.length > 0) {
+      return { success: false, error: errors[0] };
+    }
+
+    // De-duplicate by ID
+    const uniqueById = new Map<string, NeuronWriterQuery>();
+    for (const q of queries) uniqueById.set(q.id, q);
+    const allQueries = Array.from(uniqueById.values());
+
     // Try exact match first
-    let match = listResult.queries?.find(
-      q => (q.keyword || '').toLowerCase().trim() === normalizedKeyword
+    let match = allQueries.find(
+      (q) => (q.keyword || '').toLowerCase().trim() === normalizedKeyword
     );
 
     // If no exact match, try partial match (keyword contains or is contained in)
     if (!match) {
-      match = listResult.queries?.find(q => {
+      match = allQueries.find((q) => {
         const qKeyword = (q.keyword || '').toLowerCase().trim();
+        if (!qKeyword) return false;
         return qKeyword.includes(normalizedKeyword) || normalizedKeyword.includes(qKeyword);
       });
     }
 
     if (match) {
       console.log(`[NeuronWriter] ✅ Found existing query: "${match.keyword}" (ID: ${match.id})`);
+
+      // Cache it so subsequent runs never create duplicates while analysis is still processing.
+      NeuronWriterService.queryCache.set(cacheKey, {
+        id: match.id,
+        keyword: match.keyword || keyword,
+        status: match.status,
+        updatedAt: Date.now(),
+      });
+
       return { success: true, query: match };
     }
 
@@ -461,6 +516,18 @@ export class NeuronWriterService {
 
     if (!result.success) {
       return { success: false, error: result.error };
+    }
+
+    // Cache immediately so retries don't create duplicates while the new query is still processing.
+    const createdId = result.data?.query;
+    if (createdId) {
+      const cacheKey = NeuronWriterService.makeQueryCacheKey(projectId, keyword);
+      NeuronWriterService.queryCache.set(cacheKey, {
+        id: createdId,
+        keyword,
+        status: 'waiting',
+        updatedAt: Date.now(),
+      });
     }
 
     return { 

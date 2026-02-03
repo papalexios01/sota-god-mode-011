@@ -101,6 +101,95 @@ export class EnterpriseContentOrchestrator {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  private stripModelContinuationArtifacts(html: string): string {
+    if (!html) return '';
+    return html
+      // Common partial-output placeholders some models append
+      .replace(/\[\s*content continues[\s\S]*?\]/gi, '')
+      .replace(/would you like me to continue\??/gi, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  private countWordsFromHtml(html: string): number {
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!text) return 0;
+    return text.split(' ').filter(Boolean).length;
+  }
+
+  private async ensureLongFormComplete(params: {
+    keyword: string;
+    title: string;
+    systemPrompt: string;
+    model: AIModel;
+    currentHtml: string;
+    targetWordCount: number;
+  }): Promise<string> {
+    const { keyword, title, systemPrompt, model, targetWordCount } = params;
+
+    let html = this.stripModelContinuationArtifacts(params.currentHtml);
+    let words = this.countWordsFromHtml(html);
+
+    // Heuristics:
+    // - if it explicitly asks to continue, it's definitely incomplete
+    // - if it's way below target word count, keep going
+    const looksIncomplete = (s: string) =>
+      /content continues|continue\?|would you like me to continue/i.test(s);
+
+    const maxContinuations = 5;
+    for (let i = 1; i <= maxContinuations; i++) {
+      const tooShort = words > 0 && words < Math.max(800, Math.floor(targetWordCount * 0.8));
+      if (!tooShort && !looksIncomplete(html)) break;
+
+      this.log(`⚠️ Output too short (${words} words). Continuing generation… (${i}/${maxContinuations})`);
+
+      const tail = html.slice(-1600);
+      const continuationPrompt = `Continue the SAME HTML article titled "${title}" about "${keyword}" EXACTLY where it left off.
+
+Rules (MUST FOLLOW):
+- Output ONLY the HTML continuation (no preface, no apology, no brackets, no notes)
+- Do NOT repeat the H1 or reprint earlier sections
+- Do NOT ask questions like “Would you like me to continue?”
+- Keep the same tone, formatting, and premium boxes/tables
+- Finish the article fully (including the FAQ section + final CTA as instructed)
+
+Last part of the current article (for context):
+${tail}
+
+Now continue:`;
+
+      const next = await this.engine.generateWithModel({
+        prompt: continuationPrompt,
+        model,
+        apiKeys: this.config.apiKeys,
+        systemPrompt,
+        temperature: 0.68,
+      });
+
+      const nextChunk = this.stripModelContinuationArtifacts(next.content);
+      if (!nextChunk) break;
+
+      // Avoid infinite loops when the model repeats the same tail
+      const dedupeWindow = html.slice(-800);
+      const chunkStart = nextChunk.slice(0, 800);
+      if (dedupeWindow && chunkStart && dedupeWindow.includes(chunkStart)) {
+        this.log('⚠️ Continuation looks repetitive; stopping to avoid duplication.');
+        break;
+      }
+
+      html = `${html}\n\n${nextChunk}`.trim();
+      words = this.countWordsFromHtml(html);
+    }
+
+    return html;
+  }
+
   private async maybeInitNeuronWriter(keyword: string, options: GenerationOptions): Promise<NeuronBundle | null> {
     const apiKey = this.config.neuronWriterApiKey?.trim();
     const projectId = this.config.neuronWriterProjectId?.trim();
@@ -135,7 +224,9 @@ export class EnterpriseContentOrchestrator {
     }
 
     // Poll until ready (NeuronWriter analysis can take a bit)
-    const maxAttempts = 14;
+    // NeuronWriter can legitimately take 1-3 minutes for fresh queries.
+    // A too-short timeout causes: (a) no term/entity/headings injection, and (b) duplicate query creation on retries.
+    const maxAttempts = 30;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       const analysisRes = await service.getQueryAnalysis(queryId);
       if (analysisRes.success && analysisRes.analysis) {
@@ -152,8 +243,8 @@ export class EnterpriseContentOrchestrator {
         return null;
       }
 
-      // Backoff: 2.5s → 5s
-      const delay = attempt <= 3 ? 2500 : 5000;
+      // Backoff: 3s → 6s
+      const delay = attempt <= 3 ? 3000 : 6000;
       this.log(`NeuronWriter: waiting for analysis… (attempt ${attempt}/${maxAttempts})`);
       await this.sleep(delay);
     }
@@ -631,13 +722,22 @@ Write the complete article now. Make it so valuable that readers bookmark it and
         model: this.config.primaryModel || 'gemini',
         apiKeys: this.config.apiKeys,
         systemPrompt,
-        temperature: 0.78,
-        maxTokens: 12000
+        temperature: 0.78
       });
     }
 
+    // Ensure we don't publish partial ~250-word outputs.
+    // Some models "stop early" and ask to continue; we automatically continue until we hit target length.
+    let finalContent = await this.ensureLongFormComplete({
+      keyword,
+      title,
+      systemPrompt,
+      model: this.config.primaryModel || 'gemini',
+      currentHtml: result.content,
+      targetWordCount,
+    });
+
     // Add videos section if available and not already embedded
-    let finalContent = result.content;
     if (videos.length > 0 && !finalContent.includes('youtube.com/embed')) {
       const videoSection = this.buildVideoSection(videos);
       finalContent = this.insertBeforeConclusion(finalContent, videoSection);
