@@ -46,6 +46,22 @@ The built files are output to the `dist` directory.
 
 ## Key Architecture Notes
 - **State Persistence**: Uses Zustand with `persist` middleware - sitemapUrls are persisted and restored to local UI state via useEffect
+- **Database Persistence**: Generated blog posts are saved to Supabase `generated_blog_posts` table for cross-session access
 - **Quality Scoring**: QualityValidator.ts calculates scores for readability (grade 5-10 optimal), SEO, E-E-A-T (checks for citations, expert quotes, first-person), uniqueness (AI phrase detection), and fact accuracy
 - **NeuronWriter**: Service searches existing queries by keyword before creating new ones to prevent duplicates
 - **Content Generation**: EnterpriseContentOrchestrator.ts uses comprehensive prompts for 90%+ scores with premium HTML design elements (glassmorphic boxes, neumorphic cards, gradient tables)
+
+## Supabase Setup
+To enable database persistence for generated blog posts:
+
+1. Configure your Supabase credentials via environment variables:
+   - `VITE_SUPABASE_URL` - Your Supabase project URL
+   - `VITE_SUPABASE_ANON_KEY` - Your Supabase anon key
+
+2. Run the migration in your Supabase SQL Editor:
+   - File: `supabase/migrations/001_create_blog_posts_table.sql`
+
+3. The app will automatically:
+   - Load existing blog posts on startup
+   - Save new blog posts when generated
+   - Show database connection status in Review & Export page

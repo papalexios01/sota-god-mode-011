@@ -3,13 +3,14 @@ import { useOptimizerStore, type ContentItem, type GeneratedContentStore, type N
 import { 
   FileText, Check, X, AlertCircle, Trash2, 
   Sparkles, ArrowUpDown, Eye, Brain,
-  CheckCircle, Clock, XCircle, Loader2
+  CheckCircle, Clock, XCircle, Loader2, Database
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createOrchestrator, globalPerformanceTracker, type GeneratedContent, type NeuronWriterAnalysis } from "@/lib/sota";
 import { ContentViewerPanel } from "../ContentViewerPanel";
 import { EnhancedGenerationModal, type GenerationStep } from "../EnhancedGenerationModal";
 import { ContentIntelligenceDashboard } from "../ContentIntelligenceDashboard";
+import { useSupabaseSyncContext } from "@/providers/SupabaseSyncProvider";
 
 // Helper to reconstruct GeneratedContent from persisted store (minimal shape for viewer)
 function reconstructGeneratedContent(stored: GeneratedContentStore[string] | undefined): GeneratedContent | null {
@@ -112,6 +113,9 @@ export function ReviewExport() {
     setNeuronWriterData,
     removeNeuronWriterData,
   } = useOptimizerStore();
+  
+  // Supabase sync for database persistence
+  const { saveToSupabase, isConnected: dbConnected, isLoading: dbLoading, tableMissing, error: dbError } = useSupabaseSyncContext();
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [sortField, setSortField] = useState<'title' | 'type' | 'status'>('title');
   const [sortAsc, setSortAsc] = useState(true);
@@ -299,8 +303,8 @@ export function ReviewExport() {
         // Mark all steps complete
         setGenerationSteps(prev => prev.map(s => ({ ...s, status: 'completed' })));
 
-        // Store the generated content in persisted store (survives navigation)
-        setGeneratedContent(item.id, {
+        // Build content object for storage and database
+        const contentToStore = {
           id: result.id,
           title: result.title,
           seoTitle: result.seoTitle,
@@ -333,7 +337,10 @@ export function ReviewExport() {
           neuronWriterQueryId: result.neuronWriterQueryId,
           generatedAt: result.generatedAt.toISOString(),
           model: result.model,
-        });
+        };
+
+        // Store the generated content in persisted store (survives navigation)
+        setGeneratedContent(item.id, contentToStore);
 
         // Store NeuronWriter analysis (if available) in persisted store
         if (result.neuronWriterAnalysis) {
@@ -360,6 +367,12 @@ export function ReviewExport() {
         setGeneratingItems(prev => prev.map(gi => 
           gi.id === item.id ? { ...gi, status: 'completed', progress: 100 } : gi
         ));
+
+        // Save to Supabase database for persistence across sessions
+        // Pass content directly to avoid race condition with state update
+        saveToSupabase(item.id, contentToStore).catch(err => {
+          console.warn('[ReviewExport] Failed to save to Supabase:', err);
+        });
 
         globalPerformanceTracker.recordMetrics({
           timestamp: Date.now(),
@@ -460,6 +473,15 @@ export function ReviewExport() {
           label={`Sitemap (${sitemapUrls.length} pages)`}
           optional 
         />
+        <div className={cn(
+          "flex items-center gap-2 px-3 py-1.5 rounded-lg border",
+          dbLoading ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-400" :
+          dbConnected ? "bg-green-500/10 border-green-500/30 text-green-400" :
+          "bg-red-500/10 border-red-500/30 text-red-400"
+        )}>
+          <Database className="w-4 h-4" />
+          <span>{dbLoading ? 'Syncing...' : dbConnected ? 'Database Connected' : 'Database Offline'}</span>
+        </div>
       </div>
 
       {!hasSerper && (
@@ -471,6 +493,22 @@ export function ReviewExport() {
               Get your free key at serper.dev
             </a>
           </span>
+        </div>
+      )}
+
+      {tableMissing && (
+        <div className="flex items-start gap-3 px-4 py-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
+          <Database className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold mb-2">Database Table Missing</p>
+            <p className="mb-2">Your generated blog posts cannot be saved to Supabase. To enable persistence:</p>
+            <ol className="list-decimal list-inside space-y-1 text-red-300">
+              <li>Open your Supabase Dashboard</li>
+              <li>Go to SQL Editor</li>
+              <li>Run the migration from: <code className="bg-red-500/20 px-1.5 py-0.5 rounded">supabase/migrations/001_create_blog_posts_table.sql</code></li>
+              <li>Refresh this page</li>
+            </ol>
+          </div>
         </div>
       )}
 

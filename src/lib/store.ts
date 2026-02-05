@@ -147,6 +147,7 @@ interface OptimizerStore {
   // Content Queue
   contentItems: ContentItem[];
   addContentItem: (item: Omit<ContentItem, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  addContentItemWithId: (item: ContentItem) => void;
   updateContentItem: (id: string, updates: Partial<ContentItem>) => void;
   removeContentItem: (id: string) => void;
   clearContentItems: () => void;
@@ -253,6 +254,12 @@ export const useOptimizerStore = create<OptimizerStore>()(
             createdAt: new Date(),
             updatedAt: new Date(),
           },
+        ],
+      })),
+      addContentItemWithId: (item) => set((state) => ({
+        contentItems: [
+          ...state.contentItems.filter(existing => existing.id !== item.id),
+          item,
         ],
       })),
       updateContentItem: (id, updates) => set((state) => ({
