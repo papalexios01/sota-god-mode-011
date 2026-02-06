@@ -20,6 +20,19 @@ import { useWordPressPublish } from '@/hooks/useWordPressPublish';
 import { getPathnameFromUrl, getWordPressPostSlugFromUrl, toSafeWpSlug } from '@/lib/wordpress/slug';
 import { toast } from 'sonner';
 
+function sanitizeHtml(html: string): string {
+  let sanitized = html;
+  sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  sanitized = sanitized.replace(/<iframe\b[^>]*>/gi, '');
+  sanitized = sanitized.replace(/<\/iframe>/gi, '');
+  sanitized = sanitized.replace(/<object\b[^>]*>[\s\S]*?<\/object>/gi, '');
+  sanitized = sanitized.replace(/<embed\b[^>]*>/gi, '');
+  sanitized = sanitized.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '');
+  sanitized = sanitized.replace(/href\s*=\s*["']?\s*javascript\s*:/gi, 'href="');
+  sanitized = sanitized.replace(/src\s*=\s*["']?\s*javascript\s*:/gi, 'src="');
+  return sanitized;
+}
+
 interface ContentViewerPanelProps {
   item: ContentItem | null;
   generatedContent?: GeneratedContent | null;
@@ -398,7 +411,7 @@ export function ContentViewerPanel({
                     prose-table:border prose-table:border-border
                     prose-th:bg-muted/50 prose-th:p-3 prose-th:text-left
                     prose-td:p-3 prose-td:border-t prose-td:border-border"
-                  dangerouslySetInnerHTML={{ __html: content }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
                 />
               </div>
             )}
@@ -576,7 +589,7 @@ export function ContentViewerPanel({
                           prose-table:border prose-table:border-border
                           prose-th:bg-muted/50 prose-th:p-2 prose-th:text-left prose-th:text-sm
                           prose-td:p-2 prose-td:border-t prose-td:border-border prose-td:text-sm"
-                        dangerouslySetInnerHTML={{ __html: editedContent }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(editedContent) }}
                       />
                     </div>
                   </div>

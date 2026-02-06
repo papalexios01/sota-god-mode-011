@@ -11,6 +11,7 @@ import { ContentViewerPanel } from "../ContentViewerPanel";
 import { EnhancedGenerationModal, type GenerationStep } from "../EnhancedGenerationModal";
 import { ContentIntelligenceDashboard } from "../ContentIntelligenceDashboard";
 import { useSupabaseSyncContext } from "@/providers/SupabaseSyncProvider";
+import { toast } from "sonner";
 
 // Helper to reconstruct GeneratedContent from persisted store (minimal shape for viewer)
 function reconstructGeneratedContent(stored: GeneratedContentStore[string] | undefined): GeneratedContent | null {
@@ -245,56 +246,65 @@ export function ReviewExport() {
       // Reset steps for new item
       setGenerationSteps(createDefaultSteps());
       
-      // Update item status
       updateContentItem(item.id, { status: 'generating' });
-      setGeneratingItems(prev => prev.map(gi => 
+      setGeneratingItems(prev => prev.map(gi =>
         gi.id === item.id ? { ...gi, status: 'generating', progress: 0 } : gi
       ));
-      
+      const generationStartTime = Date.now();
+
       try {
-        // Simulate step progression with onProgress callback
-        let stepIndex = 0;
+        let currentStepIdx = 0;
         const stepIds = ['research', 'videos', 'references', 'outline', 'content', 'enhance', 'links', 'validate', 'schema'];
-        
+
         const result = await orchestrator.generateContent({
           keyword: item.primaryKeyword,
           title: item.title,
           onProgress: (msg) => {
-            // Parse progress message and update steps
             const lowerMsg = msg.toLowerCase();
-            
+            let detectedStep = -1;
+
             if (lowerMsg.includes('serp') || lowerMsg.includes('research') || lowerMsg.includes('analyzing')) {
               updateStep('research', 'running', msg);
+              detectedStep = 0;
             } else if (lowerMsg.includes('youtube') || lowerMsg.includes('video')) {
               updateStep('research', 'completed');
               updateStep('videos', 'running', msg);
+              detectedStep = 1;
             } else if (lowerMsg.includes('reference') || lowerMsg.includes('source') || lowerMsg.includes('citation')) {
               updateStep('videos', 'completed');
               updateStep('references', 'running', msg);
+              detectedStep = 2;
             } else if (lowerMsg.includes('outline') || lowerMsg.includes('structure')) {
               updateStep('references', 'completed');
               updateStep('outline', 'running', msg);
+              detectedStep = 3;
             } else if (lowerMsg.includes('generat') || lowerMsg.includes('writing') || lowerMsg.includes('creating')) {
               updateStep('outline', 'completed');
               updateStep('content', 'running', msg);
+              detectedStep = 4;
             } else if (lowerMsg.includes('enhance') || lowerMsg.includes('optimi')) {
               updateStep('content', 'completed');
               updateStep('enhance', 'running', msg);
+              detectedStep = 5;
             } else if (lowerMsg.includes('link') || lowerMsg.includes('internal')) {
               updateStep('enhance', 'completed');
               updateStep('links', 'running', msg);
+              detectedStep = 6;
             } else if (lowerMsg.includes('valid') || lowerMsg.includes('quality') || lowerMsg.includes('check')) {
               updateStep('links', 'completed');
               updateStep('validate', 'running', msg);
+              detectedStep = 7;
             } else if (lowerMsg.includes('schema') || lowerMsg.includes('structured')) {
               updateStep('validate', 'completed');
               updateStep('schema', 'running', msg);
+              detectedStep = 8;
             }
-            
-            // Update item progress
-            stepIndex = Math.min(stepIndex + 1, stepIds.length - 1);
-            const itemProgress = Math.round(((stepIndex + 1) / stepIds.length) * 100);
-            setGeneratingItems(prev => prev.map(gi => 
+
+            if (detectedStep >= 0) {
+              currentStepIdx = Math.max(currentStepIdx, detectedStep);
+            }
+            const itemProgress = Math.round(((currentStepIdx + 1) / stepIds.length) * 100);
+            setGeneratingItems(prev => prev.map(gi =>
               gi.id === item.id ? { ...gi, progress: itemProgress, currentStep: msg } : gi
             ));
           },
@@ -368,10 +378,9 @@ export function ReviewExport() {
           gi.id === item.id ? { ...gi, status: 'completed', progress: 100 } : gi
         ));
 
-        // Save to Supabase database for persistence across sessions
-        // Pass content directly to avoid race condition with state update
         saveToSupabase(item.id, contentToStore).catch(err => {
           console.warn('[ReviewExport] Failed to save to Supabase:', err);
+          toast.error(`Database save failed for "${item.title}". Content is preserved locally.`);
         });
 
         globalPerformanceTracker.recordMetrics({
@@ -380,7 +389,7 @@ export function ReviewExport() {
           aeoScore: result.qualityScore.seo,
           internalLinkDensity: result.internalLinks.length * 10,
           semanticRichness: result.qualityScore.eeat,
-          processingSpeed: Date.now(),
+          processingSpeed: Date.now() - generationStartTime,
           wordCount: result.metrics.wordCount,
           modelUsed: result.model,
           cacheHit: false,
@@ -403,13 +412,13 @@ export function ReviewExport() {
     setSelectedItems([]);
   };
 
-  const sortedItems = [...contentItems].sort((a, b) => {
+  const sortedItems = useMemo(() => [...contentItems].sort((a, b) => {
     const aVal = a[sortField];
     const bVal = b[sortField];
     if (aVal < bVal) return sortAsc ? -1 : 1;
     if (aVal > bVal) return sortAsc ? 1 : -1;
     return 0;
-  });
+  }), [contentItems, sortField, sortAsc]);
 
   // Content viewer navigation
   const viewingIndex = viewingItem ? sortedItems.findIndex(i => i.id === viewingItem.id) : -1;

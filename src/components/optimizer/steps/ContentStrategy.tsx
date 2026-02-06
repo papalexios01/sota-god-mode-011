@@ -326,10 +326,6 @@ export function ContentStrategy() {
         throw new Error(`No URLs found. Attempts: ${candidateErrors.join(" | ")}`);
       }
 
-      if (allUrls.length === 0) {
-        throw new Error("No page URLs found in sitemap");
-      }
-
       if (crawlRunIdRef.current !== runId) return;
 
       // Filter to blog posts only

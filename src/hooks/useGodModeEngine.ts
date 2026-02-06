@@ -11,9 +11,8 @@ import { GodModeEngine } from '@/lib/sota/GodModeEngine';
 import type {
   GodModeState,
   GodModeActivityItem,
-  GodModeHistoryItem,
   GodModeConfig,
-  DEFAULT_GOD_MODE_STATE,
+  GodModeStats,
 } from '@/lib/sota/GodModeTypes';
 
 export function useGodModeEngine() {
@@ -45,14 +44,14 @@ export function useGodModeEngine() {
     
     // Handle stats increment specially
     if (updates.stats && typeof updates.stats === 'object') {
-      const statsUpdate = updates.stats as any;
+      const statsUpdate = updates.stats as Partial<GodModeStats>;
       if (statsUpdate.totalProcessed !== undefined) {
         updateGodModeStats({
           totalProcessed: statsUpdate.totalProcessed,
           successCount: statsUpdate.successCount || 0,
           errorCount: statsUpdate.errorCount || 0,
-          qualityScore: statsUpdate.qualityScore || 0,
-          wordCount: statsUpdate.wordCount || 0,
+          qualityScore: statsUpdate.avgQualityScore || 0,
+          wordCount: statsUpdate.totalWordsGenerated || 0,
         });
         delete updates.stats;
       }

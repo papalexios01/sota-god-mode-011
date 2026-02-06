@@ -34,6 +34,16 @@ export function useWordPressPublish() {
         throw new Error('WordPress not configured. Add WordPress URL, username, and application password in Setup.');
       }
 
+      try {
+        const parsed = new URL(config.wpUrl.startsWith('http') ? config.wpUrl : `https://${config.wpUrl}`);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          throw new Error('WordPress URL must use HTTP or HTTPS');
+        }
+      } catch (e) {
+        if (e instanceof Error && e.message.includes('HTTP')) throw e;
+        throw new Error('Invalid WordPress URL format');
+      }
+
       const safeSlug = options?.slug ? options.slug.replace(/^\/+/, '').split('/').pop() : undefined;
 
       const body = {
@@ -51,16 +61,35 @@ export function useWordPressPublish() {
         existingPostId: options?.existingPostId,
       };
 
-      const response = await fetch('/api/wordpress-publish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      const maxAttempts = 2;
+      let lastError: Error | null = null;
+      let data: Record<string, unknown> | null = null;
 
-      const data = await response.json();
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+          const response = await fetch('/api/wordpress-publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal: AbortSignal.timeout(60000),
+          });
+          data = await response.json();
+          break;
+        } catch (fetchError) {
+          lastError = fetchError instanceof Error ? fetchError : new Error(String(fetchError));
+          if (attempt < maxAttempts - 1 && lastError.name !== 'AbortError') {
+            await new Promise(r => setTimeout(r, 2000));
+            continue;
+          }
+          if (lastError.name === 'TimeoutError' || lastError.message?.includes('timeout')) {
+            throw new Error('WordPress publish timed out after 60 seconds');
+          }
+          throw lastError;
+        }
+      }
 
       if (!data?.success) {
-        throw new Error(data?.error || 'Failed to publish to WordPress');
+        throw new Error((data?.error as string) || lastError?.message || 'Failed to publish to WordPress');
       }
 
       const result: PublishResult = {

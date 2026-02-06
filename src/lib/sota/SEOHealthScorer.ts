@@ -34,10 +34,34 @@ export class SEOHealthScorer {
   /**
    * Analyze a page and return comprehensive SEO health metrics
    */
+  private isPublicHttpUrl(input: string): boolean {
+    let parsed: URL;
+    try {
+      parsed = new URL(input);
+    } catch {
+      return false;
+    }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+    const hostname = parsed.hostname.toLowerCase();
+    if (hostname === 'localhost' || hostname === '[::1]') return false;
+    if (hostname.endsWith('.local') || hostname.endsWith('.internal')) return false;
+    const parts = hostname.split('.').map(Number);
+    if (parts.length === 4 && parts.every(n => !isNaN(n))) {
+      if (parts[0] === 127 || parts[0] === 10 || parts[0] === 0) return false;
+      if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return false;
+      if (parts[0] === 192 && parts[1] === 168) return false;
+      if (parts[0] === 169 && parts[1] === 254) return false;
+    }
+    return true;
+  }
+
   async analyzePage(url: string): Promise<SEOHealthAnalysis> {
     const startTime = Date.now();
-    
+
     try {
+      if (!this.isPublicHttpUrl(url)) {
+        throw new Error('URL must be a public HTTP/HTTPS address');
+      }
       const html = await this.fetchPageContent(url);
       const analysis = this.analyzeHtml(url, html);
       

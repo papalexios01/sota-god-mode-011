@@ -386,7 +386,9 @@ export class SOTAInternalLinkEngine {
         if (!match) continue;
 
         const actualText = match[0];
-        const linkHtml = `<a href="${link.targetUrl}" title="Learn more about ${anchor}">${actualText}</a>`;
+        const safeUrl = this.escapeHtmlAttr(link.targetUrl);
+        const safeTitle = this.escapeHtmlAttr(anchor);
+        const linkHtml = `<a href="${safeUrl}" title="Learn more about ${safeTitle}">${actualText}</a>`;
         parts[i] = part.replace(regex, linkHtml);
         didInject = true;
         break;
@@ -417,6 +419,15 @@ export class SOTAInternalLinkEngine {
 
   private escapeRegex(str: string): string {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  private escapeHtmlAttr(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
 
   private rebuildIndex(): void {
