@@ -1,14 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useOptimizerStore } from "@/lib/store";
 import { createNeuronWriterService } from "@/lib/sota/NeuronWriterService";
-import { 
-  Key, Globe, User, Building, Image, UserCircle, 
+import {
+  Key, Globe, User, Building, Image, UserCircle,
   Sparkles, MapPin, Check, AlertCircle, ExternalLink,
-  Settings, Loader2, FolderOpen, RefreshCw
+  Settings, Loader2, FolderOpen, RefreshCw, XCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Popular OpenRouter Models
 const OPENROUTER_MODELS = [
   { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' },
   { id: 'anthropic/claude-3-opus', name: 'Claude 3 Opus' },
@@ -22,7 +21,6 @@ const OPENROUTER_MODELS = [
   { id: 'cohere/command-r-plus', name: 'Command R+' },
 ];
 
-// Popular Groq Models
 const GROQ_MODELS = [
   { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B Versatile' },
   { id: 'llama-3.1-70b-instant', name: 'Llama 3.1 70B Instant' },
@@ -33,34 +31,39 @@ const GROQ_MODELS = [
 ];
 
 export function SetupConfig() {
-  const { 
-    config, 
-    setConfig, 
-    neuronWriterProjects, 
+  const {
+    config,
+    setConfig,
+    neuronWriterProjects,
     setNeuronWriterProjects,
     neuronWriterLoading,
     setNeuronWriterLoading,
     neuronWriterError,
     setNeuronWriterError
   } = useOptimizerStore();
-  
+
   const [verifyingWp, setVerifyingWp] = useState(false);
   const [wpVerified, setWpVerified] = useState<boolean | null>(null);
   const [customOpenRouterModel, setCustomOpenRouterModel] = useState('');
   const [customGroqModel, setCustomGroqModel] = useState('');
   const [showCustomOpenRouter, setShowCustomOpenRouter] = useState(false);
   const [showCustomGroq, setShowCustomGroq] = useState(false);
+  const [nwFetchAttempted, setNwFetchAttempted] = useState(false);
 
-  // Fetch NeuronWriter projects when API key changes
+  const configRef = useRef(config);
+  configRef.current = config;
+
   const fetchNeuronWriterProjects = useCallback(async (apiKey: string) => {
-    if (!apiKey || apiKey.length < 10) {
+    if (!apiKey || apiKey.trim().length < 10) {
       setNeuronWriterProjects([]);
       setNeuronWriterError(null);
+      setNwFetchAttempted(false);
       return;
     }
 
     setNeuronWriterLoading(true);
     setNeuronWriterError(null);
+    setNwFetchAttempted(true);
 
     try {
       const service = createNeuronWriterService(apiKey);
@@ -69,46 +72,44 @@ export function SetupConfig() {
       if (result.success && result.projects) {
         setNeuronWriterProjects(result.projects);
         setNeuronWriterError(null);
-        
-        // Auto-select first project if none selected
-        if (result.projects.length > 0 && !config.neuronWriterProjectId) {
-          setConfig({ 
+
+        if (result.projects.length > 0 && !configRef.current.neuronWriterProjectId) {
+          setConfig({
             neuronWriterProjectId: result.projects[0].id,
             neuronWriterProjectName: result.projects[0].name
           });
         }
       } else {
-        setNeuronWriterError(result.error || 'Failed to fetch projects');
+        const errorMsg = result.error || 'Failed to fetch projects';
+        setNeuronWriterError(errorMsg);
         setNeuronWriterProjects([]);
       }
     } catch (error) {
       console.error('NeuronWriter fetch error:', error);
-      setNeuronWriterError(error instanceof Error ? error.message : 'Unknown error');
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      setNeuronWriterError(`Connection failed: ${message}`);
       setNeuronWriterProjects([]);
     } finally {
       setNeuronWriterLoading(false);
     }
-  }, [setNeuronWriterProjects, setNeuronWriterLoading, setNeuronWriterError, config.neuronWriterProjectId, setConfig]);
+  }, [setNeuronWriterProjects, setNeuronWriterLoading, setNeuronWriterError, setConfig]);
 
-  // Auto-fetch when API key changes
   useEffect(() => {
-    if (config.enableNeuronWriter && config.neuronWriterApiKey) {
+    if (config.enableNeuronWriter && config.neuronWriterApiKey && config.neuronWriterApiKey.trim().length >= 10) {
       const debounceTimer = setTimeout(() => {
         fetchNeuronWriterProjects(config.neuronWriterApiKey);
-      }, 500);
+      }, 800);
       return () => clearTimeout(debounceTimer);
     }
   }, [config.enableNeuronWriter, config.neuronWriterApiKey, fetchNeuronWriterProjects]);
-
 
   const handleVerifyWordPress = async () => {
     if (!config.wpUrl || !config.wpUsername || !config.wpAppPassword) {
       return;
     }
-    
+
     setVerifyingWp(true);
     try {
-      // Simulate verification
       await new Promise((resolve) => setTimeout(resolve, 1500));
       setWpVerified(true);
     } catch {
@@ -120,7 +121,7 @@ export function SetupConfig() {
 
   const handleProjectSelect = (projectId: string) => {
     const project = neuronWriterProjects.find(p => p.id === projectId);
-    setConfig({ 
+    setConfig({
       neuronWriterProjectId: projectId,
       neuronWriterProjectName: project?.name || ''
     });
@@ -228,7 +229,6 @@ export function SetupConfig() {
           AI Model Configuration
         </h2>
         <div className="space-y-6">
-          {/* Primary Model Selection */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
               Primary Generation Model
@@ -246,7 +246,6 @@ export function SetupConfig() {
             </select>
           </div>
 
-          {/* OpenRouter Model Selection */}
           {(config.primaryModel === 'openrouter' || config.openrouterApiKey) && (
             <div className="p-4 bg-background/50 border border-border rounded-xl space-y-3">
               <label className="block text-sm font-medium text-foreground">
@@ -261,7 +260,7 @@ export function SetupConfig() {
                   {OPENROUTER_MODELS.map(m => (
                     <option key={m.id} value={m.id}>{m.name}</option>
                   ))}
-                  <option value="custom">⚙️ Custom Model ID...</option>
+                  <option value="custom">Custom Model ID...</option>
                 </select>
               </div>
               {showCustomOpenRouter && (
@@ -287,7 +286,6 @@ export function SetupConfig() {
             </div>
           )}
 
-          {/* Groq Model Selection */}
           {(config.primaryModel === 'groq' || config.groqApiKey) && (
             <div className="p-4 bg-background/50 border border-border rounded-xl space-y-3">
               <label className="block text-sm font-medium text-foreground">
@@ -302,7 +300,7 @@ export function SetupConfig() {
                   {GROQ_MODELS.map(m => (
                     <option key={m.id} value={m.id}>{m.name}</option>
                   ))}
-                  <option value="custom">⚙️ Custom Model ID...</option>
+                  <option value="custom">Custom Model ID...</option>
                 </select>
               </div>
               {showCustomGroq && (
@@ -391,7 +389,7 @@ export function SetupConfig() {
             icon={<UserCircle className="w-4 h-4" />}
           />
         </div>
-        
+
         <div className="mt-4 flex items-center gap-3">
           <a
             href={config.wpUrl || "#"}
@@ -427,7 +425,7 @@ export function SetupConfig() {
                 <AlertCircle className="w-4 h-4" /> Failed
               </>
             ) : (
-              "✅ Verify WordPress"
+              "Verify WordPress"
             )}
           </button>
         </div>
@@ -448,7 +446,7 @@ export function SetupConfig() {
           />
           <span className="text-sm text-foreground">Enable NeuronWriter Integration</span>
         </label>
-        
+
         {config.enableNeuronWriter && (
           <div className="space-y-4">
             <InputField
@@ -459,9 +457,7 @@ export function SetupConfig() {
               placeholder="Enter NeuronWriter key..."
             />
 
-            
-            {/* Project Selection */}
-            {config.neuronWriterApiKey && (
+            {config.neuronWriterApiKey && config.neuronWriterApiKey.trim().length >= 10 && (
               <div className="p-4 bg-background/50 border border-border rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-foreground flex items-center gap-2">
@@ -471,20 +467,37 @@ export function SetupConfig() {
                   <button
                     onClick={() => fetchNeuronWriterProjects(config.neuronWriterApiKey)}
                     disabled={neuronWriterLoading}
-                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                    className="text-sm text-primary hover:text-primary/80 flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-primary/10 transition-colors disabled:opacity-50"
                   >
-                    <RefreshCw className={cn("w-3 h-3", neuronWriterLoading && "animate-spin")} />
-                    Refresh
+                    <RefreshCw className={cn("w-3.5 h-3.5", neuronWriterLoading && "animate-spin")} />
+                    {neuronWriterLoading ? 'Loading...' : 'Refresh Projects'}
                   </button>
                 </div>
 
                 {neuronWriterLoading && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">Fetching projects...</span>
+                  <div className="flex items-center gap-2.5 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                    <span className="text-sm text-blue-400">Connecting to NeuronWriter API...</span>
                   </div>
                 )}
 
+                {!neuronWriterLoading && neuronWriterError && (
+                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <div className="flex items-start gap-2.5">
+                      <XCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-red-400">Failed to load projects</p>
+                        <p className="text-xs text-red-400/70 mt-0.5 break-words">{neuronWriterError}</p>
+                        <button
+                          onClick={() => fetchNeuronWriterProjects(config.neuronWriterApiKey)}
+                          className="mt-2 text-xs text-red-300 hover:text-red-200 underline"
+                        >
+                          Try again
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {!neuronWriterLoading && !neuronWriterError && neuronWriterProjects.length > 0 && (
                   <>
@@ -500,21 +513,43 @@ export function SetupConfig() {
                         </option>
                       ))}
                     </select>
-                    
+
                     {config.neuronWriterProjectId && (
-                      <div className="flex items-center gap-2 text-green-400 text-sm">
-                        <Check className="w-4 h-4" />
-                        Selected: <strong>{config.neuronWriterProjectName}</strong>
+                      <div className="flex items-center gap-2 text-green-400 text-sm p-2 bg-green-500/5 border border-green-500/15 rounded-lg">
+                        <Check className="w-4 h-4 flex-shrink-0" />
+                        <span>Selected: <strong>{config.neuronWriterProjectName}</strong></span>
                       </div>
                     )}
                   </>
                 )}
 
-                {!neuronWriterLoading && !neuronWriterError && neuronWriterProjects.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    No projects found. Create a project in NeuronWriter first, or check your API key.
-                  </p>
+                {!neuronWriterLoading && !neuronWriterError && neuronWriterProjects.length === 0 && nwFetchAttempted && (
+                  <div className="p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-lg">
+                    <div className="flex items-start gap-2.5">
+                      <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm text-yellow-400">No projects found</p>
+                        <p className="text-xs text-yellow-400/60 mt-0.5">
+                          Create a project in NeuronWriter first, or verify your API key is correct.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 )}
+
+                {!neuronWriterLoading && !neuronWriterError && neuronWriterProjects.length === 0 && !nwFetchAttempted && (
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Click "Refresh Projects" to load your NeuronWriter projects.</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {config.neuronWriterApiKey && config.neuronWriterApiKey.trim().length > 0 && config.neuronWriterApiKey.trim().length < 10 && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>API key appears too short. Enter a valid NeuronWriter API key.</span>
               </div>
             )}
           </div>

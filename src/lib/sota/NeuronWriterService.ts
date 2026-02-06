@@ -110,7 +110,10 @@ export class NeuronWriterService {
   ): Promise<{ success: boolean; data?: T; error?: string }> {
     try {
       console.log(`[NeuronWriter] API call: ${endpoint}`);
-      
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
       const response = await fetch('/api/neuronwriter-proxy', {
         method: 'POST',
         headers: {
@@ -122,20 +125,41 @@ export class NeuronWriterService {
           apiKey: this.apiKey,
           body,
         }),
+        signal: controller.signal,
       });
 
-      const result = await response.json();
+      clearTimeout(timeoutId);
+
+      let result: any;
+      try {
+        result = await response.json();
+      } catch {
+        return { success: false, error: `Server returned invalid response (HTTP ${response.status})` };
+      }
+
+      if (!response.ok && !result.error) {
+        return { success: false, error: `Server error: HTTP ${response.status}` };
+      }
 
       if (!result.success) {
-        return { success: false, error: result.error || 'API call failed' };
+        let errorMsg = result.error || 'API call failed';
+        if (result.status === 401 || result.status === 403) {
+          errorMsg = 'Invalid API key. Check your NeuronWriter API key and try again.';
+        } else if (result.status === 429) {
+          errorMsg = 'Rate limited by NeuronWriter API. Wait a moment and try again.';
+        }
+        return { success: false, error: errorMsg };
       }
 
       return { success: true, data: result.data as T };
     } catch (error) {
       console.error('[NeuronWriter] API error:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Network error' 
+      if (error instanceof Error && error.name === 'AbortError') {
+        return { success: false, error: 'Request timed out. The NeuronWriter API may be slow - try again.' };
+      }
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Network error - check your connection'
       };
     }
   }

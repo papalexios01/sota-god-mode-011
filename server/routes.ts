@@ -199,9 +199,10 @@ export function registerRoutes(app: Express): void {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       const isTimeout = errorMessage.includes("abort");
-      res.status(isTimeout ? 408 : 500).json({
+      res.json({
         success: false,
-        error: isTimeout ? "Request timed out" : errorMessage,
+        status: isTimeout ? 408 : 500,
+        error: isTimeout ? "Request timed out. The NeuronWriter API may be slow - try again." : errorMessage,
         type: isTimeout ? "timeout" : "network_error",
       });
     }
