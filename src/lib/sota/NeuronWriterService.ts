@@ -115,7 +115,6 @@ export class NeuronWriterService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-NeuronWriter-Key': this.apiKey,
         },
         body: JSON.stringify({
           endpoint,

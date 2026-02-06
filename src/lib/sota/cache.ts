@@ -12,7 +12,7 @@ class GenerationCache {
   private accessOrder: string[] = [];
 
   private generateKey(params: unknown): string {
-    return JSON.stringify(params);
+    return JSON.stringify(params, Object.keys(params as object).sort());
   }
 
   get<T>(params: unknown): Promise<T> | undefined {

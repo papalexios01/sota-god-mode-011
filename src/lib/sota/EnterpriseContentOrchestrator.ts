@@ -130,25 +130,46 @@ function convertMarkdownToHTML(content: string): string {
  */
 function ensureProperHTMLStructure(content: string): string {
   let html = content;
-  
-  // Fix any double-wrapped paragraphs
+
   html = html.replace(/<p[^>]*>\s*<p/g, '<p');
   html = html.replace(/<\/p>\s*<\/p>/g, '</p>');
-  
-  // Ensure proper spacing between sections
+
   html = html.replace(/<\/div>\s*<h2/g, '</div>\n\n<h2');
   html = html.replace(/<\/p>\s*<h2/g, '</p>\n\n<h2');
   html = html.replace(/<\/div>\s*<h3/g, '</div>\n\n<h3');
   html = html.replace(/<\/p>\s*<h3/g, '</p>\n\n<h3');
-  
-  // Remove empty paragraphs
+
   html = html.replace(/<p[^>]*>\s*<\/p>/g, '');
-  
-  // Fix broken heading styles - ensure all h2 and h3 have proper styling
+
   html = html.replace(/<h2>([^<]+)<\/h2>/g, '<h2 style="color: #1f2937; font-size: 28px; font-weight: 800; margin: 48px 0 24px 0; padding-bottom: 12px; border-bottom: 3px solid #10b981;">$1</h2>');
   html = html.replace(/<h3>([^<]+)<\/h3>/g, '<h3 style="color: #374151; font-size: 22px; font-weight: 700; margin: 36px 0 16px 0;">$1</h3>');
   html = html.replace(/<h4>([^<]+)<\/h4>/g, '<h4 style="color: #4b5563; font-size: 18px; font-weight: 700; margin: 28px 0 12px 0;">$1</h4>');
-  
+
+  const headingRegex = /<h([1-6])[^>]*>/gi;
+  let match: RegExpExecArray | null;
+  let lastLevel = 0;
+  const fixes: Array<{ index: number; from: number; to: number }> = [];
+
+  while ((match = headingRegex.exec(html)) !== null) {
+    const level = parseInt(match[1], 10);
+    if (lastLevel > 0 && level > lastLevel + 1) {
+      fixes.push({ index: match.index, from: level, to: lastLevel + 1 });
+    }
+    lastLevel = level;
+  }
+
+  for (let i = fixes.length - 1; i >= 0; i--) {
+    const fix = fixes[i];
+    const searchFrom = html.substring(fix.index);
+    const openTag = searchFrom.match(new RegExp(`<h${fix.from}`, 'i'));
+    const closeTag = searchFrom.match(new RegExp(`</h${fix.from}>`, 'i'));
+    if (openTag && closeTag) {
+      html = html.substring(0, fix.index) +
+        searchFrom.replace(new RegExp(`<h${fix.from}`, 'i'), `<h${fix.to}`)
+                   .replace(new RegExp(`</h${fix.from}>`, 'i'), `</h${fix.to}>`);
+    }
+  }
+
   return html;
 }
 
@@ -611,7 +632,7 @@ OUTPUT: Return the COMPLETE improved article in PURE HTML format (no markdown) w
               model: this.config.primaryModel || 'gemini',
               apiKeys: this.config.apiKeys,
               systemPrompt: 'You are an expert SEO content optimizer. Improve articles by naturally incorporating missing keywords to achieve 90%+ NeuronWriter scores. Output PURE HTML ONLY.',
-              temperature: 0.6 + (attempt * 0.1) // Increase temperature slightly each attempt for variation
+              temperature: 0.65
             });
             
             if (improvedResult.content && improvedResult.content.length > currentContent.length * 0.8) {

@@ -182,28 +182,30 @@ export class SOTAContentGenerationEngine {
     maxTokens: number = 8192
   ): Promise<string> {
     const url = `${this.modelConfigs.gemini.endpoint}/gemini-2.0-flash:generateContent?key=${apiKey}`;
-    
-    const contents = [];
+
+    const contents = [{ role: 'user', parts: [{ text: prompt }] }];
+
+    const requestBody: Record<string, unknown> = {
+      contents,
+      generationConfig: {
+        temperature,
+        maxOutputTokens: maxTokens
+      }
+    };
+
     if (systemPrompt) {
-      contents.push({ role: 'user', parts: [{ text: systemPrompt }] });
-      contents.push({ role: 'model', parts: [{ text: 'Understood. I will follow these instructions.' }] });
+      requestBody.system_instruction = { parts: [{ text: systemPrompt }] };
     }
-    contents.push({ role: 'user', parts: [{ text: prompt }] });
 
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        generationConfig: {
-          temperature,
-          maxOutputTokens: maxTokens
-        }
-      })
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status}`);
+      const errorBody = await response.text().catch(() => '');
+      throw new Error(`Gemini API error ${response.status}: ${errorBody.slice(0, 200)}`);
     }
 
     const data = await response.json();
@@ -260,7 +262,8 @@ export class SOTAContentGenerationEngine {
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
         model: this.modelConfigs.anthropic.modelId,
@@ -272,13 +275,14 @@ export class SOTAContentGenerationEngine {
     });
 
     if (!response.ok) {
-      throw new Error(`Anthropic API error: ${response.status}`);
+      const errorBody = await response.text().catch(() => '');
+      throw new Error(`Anthropic API error ${response.status}: ${errorBody.slice(0, 200)}`);
     }
 
     const data = await response.json();
     return {
       content: data.content?.[0]?.text || '',
-      tokens: data.usage?.input_tokens + data.usage?.output_tokens || 0
+      tokens: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0)
     };
   }
 

@@ -184,8 +184,12 @@ export class GodModeEngine {
         continue;
       }
 
+      if (this.queue.some(q => q.url === priorityUrl.url)) {
+        continue;
+      }
+
       priorityCounts[priorityUrl.priority]++;
-      
+
       this.queue.push({
         id: crypto.randomUUID(),
         url: priorityUrl.url,
@@ -399,10 +403,9 @@ export class GodModeEngine {
       try {
         const analysis = await seoHealthScorer.analyzePage(url);
         
-        // Add to queue if below threshold
-        if (analysis.score < this.options.config.minHealthScore) {
+        if (analysis.score < this.options.config.minHealthScore && !this.queue.some(q => q.url === url)) {
           const priority = this.calculatePriority(analysis.score, url);
-          
+
           this.queue.push({
             id: crypto.randomUUID(),
             url,
@@ -803,16 +806,30 @@ export class GodModeEngine {
   }
 
   private isExcluded(url: string): boolean {
-    // Check exact URL exclusions
-    if (this.options.excludedUrls.some(excl => url.includes(excl))) {
+    let pathname: string;
+    try {
+      pathname = new URL(url).pathname.toLowerCase();
+    } catch {
+      pathname = url.toLowerCase();
+    }
+
+    if (this.options.excludedUrls.some(excl => {
+      try {
+        return new URL(excl).pathname.toLowerCase() === pathname || url === excl;
+      } catch {
+        return url.includes(excl);
+      }
+    })) {
       return true;
     }
-    
-    // Check category exclusions
-    if (this.options.excludedCategories.some(cat => url.toLowerCase().includes(cat.toLowerCase()))) {
+
+    if (this.options.excludedCategories.some(cat => {
+      const catLower = cat.toLowerCase();
+      return pathname.split('/').some(segment => segment === catLower);
+    })) {
       return true;
     }
-    
+
     return false;
   }
 
