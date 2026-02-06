@@ -1,42 +1,21 @@
+import { supabase } from '../supabaseClient';
 import type { GeneratedContentStore } from '../store';
 
-export interface PersistedBlogPost {
-  id: string;
-  item_id: string;
-  title: string;
-  seo_title?: string;
-  content: string;
-  meta_description: string;
-  slug: string;
-  primary_keyword: string;
-  secondary_keywords: string[];
-  word_count: number;
-  quality_score: {
-    overall: number;
-    readability: number;
-    seo: number;
-    eeat: number;
-    uniqueness: number;
-    factAccuracy: number;
-  };
-  internal_links: Array<{ anchorText?: string; anchor?: string; targetUrl: string; context: string }>;
-  schema?: unknown;
-  serp_analysis?: {
-    avgWordCount: number;
-    recommendedWordCount: number;
-    userIntent: string;
-  };
-  neuronwriter_query_id?: string;
-  generated_at: string;
-  model: string;
-  created_at?: string;
-  updated_at?: string;
-}
+const TABLE = 'generated_blog_posts';
 
 export async function ensureTableExists(): Promise<boolean> {
   try {
-    const response = await fetch('/api/blog-posts');
-    return response.ok;
+    const { error } = await supabase
+      .from(TABLE)
+      .select('id')
+      .limit(1);
+
+    if (error) {
+      console.error('[ContentPersistence] Table check failed:', error.message);
+      return false;
+    }
+
+    return true;
   } catch (err) {
     console.error('[ContentPersistence] Connection error:', err);
     return false;
@@ -45,20 +24,47 @@ export async function ensureTableExists(): Promise<boolean> {
 
 export async function loadAllBlogPosts(): Promise<GeneratedContentStore> {
   try {
-    const response = await fetch('/api/blog-posts');
-    if (!response.ok) {
-      console.error('[ContentPersistence] Load error:', response.statusText);
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select('*')
+      .order('generated_at', { ascending: false });
+
+    if (error) {
+      console.error('[ContentPersistence] Load error:', error.message);
       return {};
     }
 
-    const result = await response.json();
-    if (!result.success) {
-      console.error('[ContentPersistence] Load error:', result.error);
-      return {};
+    const store: GeneratedContentStore = {};
+    for (const row of data || []) {
+      store[row.item_id] = {
+        id: row.id,
+        title: row.title,
+        seoTitle: row.seo_title,
+        content: row.content,
+        metaDescription: row.meta_description,
+        slug: row.slug,
+        primaryKeyword: row.primary_keyword,
+        secondaryKeywords: row.secondary_keywords || [],
+        wordCount: row.word_count,
+        qualityScore: row.quality_score || {
+          overall: 0,
+          readability: 0,
+          seo: 0,
+          eeat: 0,
+          uniqueness: 0,
+          factAccuracy: 0,
+        },
+        internalLinks: row.internal_links || [],
+        schema: row.schema,
+        serpAnalysis: row.serp_analysis,
+        neuronWriterQueryId: row.neuronwriter_query_id,
+        generatedAt: row.generated_at,
+        model: row.model,
+      };
     }
 
-    console.log(`[ContentPersistence] Loaded ${Object.keys(result.data || {}).length} blog posts from database`);
-    return result.data || {};
+    console.log(`[ContentPersistence] Loaded ${Object.keys(store).length} blog posts from Supabase`);
+    return store;
   } catch (err) {
     console.error('[ContentPersistence] Load exception:', err);
     return {};
@@ -67,20 +73,33 @@ export async function loadAllBlogPosts(): Promise<GeneratedContentStore> {
 
 export async function saveBlogPost(itemId: string, content: GeneratedContentStore[string]): Promise<boolean> {
   try {
-    const response = await fetch('/api/blog-posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ itemId, content }),
-    });
+    const row = {
+      id: content.id,
+      item_id: itemId,
+      title: content.title,
+      seo_title: content.seoTitle,
+      content: content.content,
+      meta_description: content.metaDescription,
+      slug: content.slug,
+      primary_keyword: content.primaryKeyword,
+      secondary_keywords: content.secondaryKeywords,
+      word_count: content.wordCount,
+      quality_score: content.qualityScore,
+      internal_links: content.internalLinks,
+      schema: content.schema,
+      serp_analysis: content.serpAnalysis,
+      neuronwriter_query_id: content.neuronWriterQueryId,
+      generated_at: content.generatedAt || new Date().toISOString(),
+      model: content.model,
+      user_id: null,
+    };
 
-    if (!response.ok) {
-      console.error('[ContentPersistence] Save error:', response.statusText);
-      return false;
-    }
+    const { error } = await supabase
+      .from(TABLE)
+      .upsert(row, { onConflict: 'item_id' });
 
-    const result = await response.json();
-    if (!result.success) {
-      console.error('[ContentPersistence] Save error:', result.error);
+    if (error) {
+      console.error('[ContentPersistence] Save error:', error.message);
       return false;
     }
 
@@ -94,18 +113,13 @@ export async function saveBlogPost(itemId: string, content: GeneratedContentStor
 
 export async function deleteBlogPost(itemId: string): Promise<boolean> {
   try {
-    const response = await fetch(`/api/blog-posts/${encodeURIComponent(itemId)}`, {
-      method: 'DELETE',
-    });
+    const { error } = await supabase
+      .from(TABLE)
+      .delete()
+      .eq('item_id', itemId);
 
-    if (!response.ok) {
-      console.error('[ContentPersistence] Delete error:', response.statusText);
-      return false;
-    }
-
-    const result = await response.json();
-    if (!result.success) {
-      console.error('[ContentPersistence] Delete error:', result.error);
+    if (error) {
+      console.error('[ContentPersistence] Delete error:', error.message);
       return false;
     }
 
