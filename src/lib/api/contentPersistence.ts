@@ -1,9 +1,23 @@
-import { supabase } from '../supabaseClient';
+import { supabase, isSupabaseConfigured, withSupabase } from '../supabaseClient';
 import type { GeneratedContentStore } from '../store';
+
+// =============================================================================
+// SOTA Content Persistence with Graceful Supabase Fallback
+// =============================================================================
+// All operations safely check for Supabase availability.
+// When Supabase is not configured, operations return sensible defaults
+// and the app continues to work using local storage (via Zustand persist).
+// =============================================================================
 
 const TABLE = 'generated_blog_posts';
 
 export async function ensureTableExists(): Promise<boolean> {
+  // If Supabase is not configured, return false (not an error state)
+  if (!isSupabaseConfigured || !supabase) {
+    console.info('[ContentPersistence] Supabase not configured, using local storage only');
+    return false;
+  }
+
   try {
     const { error } = await supabase
       .from(TABLE)
@@ -11,6 +25,11 @@ export async function ensureTableExists(): Promise<boolean> {
       .limit(1);
 
     if (error) {
+      // Table doesn't exist or permission issue
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        console.warn('[ContentPersistence] Table does not exist:', TABLE);
+        return false;
+      }
       console.error('[ContentPersistence] Table check failed:', error.message);
       return false;
     }
@@ -23,6 +42,12 @@ export async function ensureTableExists(): Promise<boolean> {
 }
 
 export async function loadAllBlogPosts(): Promise<GeneratedContentStore> {
+  // If Supabase is not configured, return empty (local storage handles persistence)
+  if (!isSupabaseConfigured || !supabase) {
+    console.info('[ContentPersistence] Skipping Supabase load (not configured)');
+    return {};
+  }
+
   try {
     const { data, error } = await supabase
       .from(TABLE)
@@ -72,6 +97,12 @@ export async function loadAllBlogPosts(): Promise<GeneratedContentStore> {
 }
 
 export async function saveBlogPost(itemId: string, content: GeneratedContentStore[string]): Promise<boolean> {
+  // If Supabase is not configured, silently succeed (local storage handles it)
+  if (!isSupabaseConfigured || !supabase) {
+    console.info('[ContentPersistence] Skipping Supabase save (not configured)');
+    return true; // Return true so the app doesn't show error states
+  }
+
   try {
     const row = {
       id: content.id,
@@ -112,6 +143,12 @@ export async function saveBlogPost(itemId: string, content: GeneratedContentStor
 }
 
 export async function deleteBlogPost(itemId: string): Promise<boolean> {
+  // If Supabase is not configured, silently succeed
+  if (!isSupabaseConfigured || !supabase) {
+    console.info('[ContentPersistence] Skipping Supabase delete (not configured)');
+    return true;
+  }
+
   try {
     const { error } = await supabase
       .from(TABLE)

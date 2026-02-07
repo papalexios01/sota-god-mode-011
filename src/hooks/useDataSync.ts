@@ -1,7 +1,16 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useOptimizerStore, type GeneratedContentStore } from '@/lib/store';
+import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { loadAllBlogPosts, saveBlogPost, deleteBlogPost, ensureTableExists } from '@/lib/api/contentPersistence';
 import { toast } from 'sonner';
+
+// =============================================================================
+// SOTA Data Sync Hook with Graceful Degradation
+// =============================================================================
+// This hook manages synchronization between local state and Supabase.
+// When Supabase is not configured, the hook operates in "offline mode"
+// using only localStorage (via Zustand persist middleware).
+// =============================================================================
 
 export function useDataSync() {
   const [isLoading, setIsLoading] = useState(false);
@@ -18,6 +27,16 @@ export function useDataSync() {
   } = useOptimizerStore();
 
   const loadFromDatabase = useCallback(async () => {
+    // Early exit if Supabase isn't configured - this is expected and not an error
+    if (!isSupabaseConfigured) {
+      console.info('[DataSync] Running in offline mode (Supabase not configured)');
+      setIsLoading(false);
+      setIsConnected(false);
+      setError(null); // No error - this is expected behavior
+      setTableMissing(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -73,6 +92,11 @@ export function useDataSync() {
   }, [setGeneratedContent, contentItems, addContentItemWithId]);
 
   const saveToDatabase = useCallback(async (itemId: string, contentOverride?: GeneratedContentStore[string]) => {
+    // In offline mode, return true (localStorage handles persistence)
+    if (!isSupabaseConfigured) {
+      return true;
+    }
+
     const content = contentOverride || generatedContentsStore[itemId];
     if (!content) {
       console.warn('[DataSync] No content found for item:', itemId);
@@ -96,6 +120,11 @@ export function useDataSync() {
   }, [generatedContentsStore]);
 
   const deleteFromDatabase = useCallback(async (itemId: string) => {
+    // In offline mode, return true (localStorage handles persistence)
+    if (!isSupabaseConfigured) {
+      return true;
+    }
+
     try {
       return await deleteBlogPost(itemId);
     } catch (err) {
@@ -105,6 +134,12 @@ export function useDataSync() {
   }, []);
 
   const syncAllToDatabase = useCallback(async () => {
+    // In offline mode, skip sync silently
+    if (!isSupabaseConfigured) {
+      toast.info('Running in offline mode - data saved locally');
+      return;
+    }
+
     setIsLoading(true);
     let successCount = 0;
     let errorCount = 0;
@@ -130,7 +165,15 @@ export function useDataSync() {
     }
   }, [generatedContentsStore]);
 
+  // Initial load on mount - wrapped in try/catch for safety
   useEffect(() => {
+    // Don't attempt load if Supabase isn't configured
+    if (!isSupabaseConfigured) {
+      console.info('[DataSync] Supabase not configured - skipping initial load');
+      setIsLoading(false);
+      return;
+    }
+
     loadFromDatabase().catch(err => {
       console.error('[DataSync] Initial load failed:', err);
       setIsConnected(false);
@@ -144,10 +187,12 @@ export function useDataSync() {
     lastSyncTime,
     error,
     tableMissing,
+    isOfflineMode: !isSupabaseConfigured,
     loadFromDatabase,
     saveToDatabase,
     deleteFromDatabase,
     syncAllToDatabase,
+    // Aliases for backward compatibility
     loadFromSupabase: loadFromDatabase,
     saveToSupabase: saveToDatabase,
     deleteFromSupabase: deleteFromDatabase,
