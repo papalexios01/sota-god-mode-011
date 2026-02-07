@@ -131,7 +131,11 @@ export function useDataSync() {
   }, [generatedContentsStore]);
 
   useEffect(() => {
-    loadFromDatabase();
+    loadFromDatabase().catch(err => {
+      console.error('[DataSync] Initial load failed:', err);
+      setIsConnected(false);
+      setIsLoading(false);
+    });
   }, []);
 
   return {
