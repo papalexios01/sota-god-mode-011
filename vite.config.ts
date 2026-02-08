@@ -38,7 +38,6 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: {
           'vendor-react': ['react', 'react-dom'],
-          'vendor-ai': ['openai'],
         },
       },
     },
@@ -47,6 +46,6 @@ export default defineConfig(({ mode }) => ({
     'process.env': {},
   },
   optimizeDeps: {
-    exclude: ['@anthropic-ai/sdk'],
+    exclude: [],
   },
 }));
