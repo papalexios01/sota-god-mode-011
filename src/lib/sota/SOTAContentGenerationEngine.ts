@@ -20,7 +20,7 @@ interface ModelConfig {
 const DEFAULT_MODEL_CONFIGS: Record<AIModel, ModelConfig> = {
   gemini: {
     endpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
-    modelId: 'gemini-2.0-flash',
+    modelId: 'gemini-2.5-flash',
     weight: 1.0,
     maxTokens: 8192
   },
@@ -179,7 +179,7 @@ export class SOTAContentGenerationEngine {
     temperature: number = 0.7,
     maxTokens: number = 8192
   ): Promise<string> {
-    const url = `${this.modelConfigs.gemini.endpoint}/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const url = `${this.modelConfigs.gemini.endpoint}/${this.modelConfigs.gemini.modelId}:generateContent?key=${apiKey}`;
 
     const contents = [{ role: 'user', parts: [{ text: prompt }] }];
 
