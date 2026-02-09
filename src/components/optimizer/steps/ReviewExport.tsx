@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { useOptimizerStore, type ContentItem, type GeneratedContentStore, type NeuronWriterDataStore } from "@/lib/store";
-import { 
-  FileText, Check, X, AlertCircle, Trash2, 
+import {
+  FileText, Check, X, AlertCircle, Trash2,
   Sparkles, ArrowUpDown, Eye, Brain,
   CheckCircle, Clock, XCircle, Loader2, Database
 } from "lucide-react";
@@ -100,9 +100,9 @@ function reconstructNeuronData(stored: NeuronWriterDataStore[string] | undefined
 }
 
 export function ReviewExport() {
-  const { 
-    contentItems, 
-    updateContentItem, 
+  const {
+    contentItems,
+    updateContentItem,
     removeContentItem,
     config,
     sitemapUrls,
@@ -114,17 +114,17 @@ export function ReviewExport() {
     setNeuronWriterData,
     removeNeuronWriterData,
   } = useOptimizerStore();
-  
+
   // Supabase sync for database persistence
   const { saveToSupabase, isConnected: dbConnected, isLoading: dbLoading, tableMissing, error: dbError, isOfflineMode } = useSupabaseSyncContext();
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [sortField, setSortField] = useState<'title' | 'type' | 'status'>('title');
   const [sortAsc, setSortAsc] = useState(true);
   const [showAnalytics, setShowAnalytics] = useState(false);
-  
+
   // Content Viewer State - now uses persisted store
   const [viewingItem, setViewingItem] = useState<ContentItem | null>(null);
-  
+
   // Generation State
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
@@ -142,7 +142,7 @@ export function ReviewExport() {
   }>>([]);
 
   const toggleSelect = (id: string) => {
-    setSelectedItems(prev => 
+    setSelectedItems(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
   };
@@ -169,7 +169,7 @@ export function ReviewExport() {
   ];
 
   const updateStep = useCallback((stepId: string, status: GenerationStep['status'], message?: string) => {
-    setGenerationSteps(prev => prev.map(s => 
+    setGenerationSteps(prev => prev.map(s =>
       s.id === stepId ? { ...s, status, message } : s
     ));
   }, []);
@@ -242,10 +242,10 @@ export function ReviewExport() {
     for (let i = 0; i < toGenerate.length; i++) {
       const item = toGenerate[i];
       setCurrentItemIndex(i);
-      
+
       // Reset steps for new item
       setGenerationSteps(createDefaultSteps());
-      
+
       updateContentItem(item.id, { status: 'generating' });
       setGeneratingItems(prev => prev.map(gi =>
         gi.id === item.id ? { ...gi, status: 'generating', progress: 0 } : gi
@@ -368,13 +368,13 @@ export function ReviewExport() {
           });
         }
 
-        updateContentItem(item.id, { 
-          status: 'completed', 
+        updateContentItem(item.id, {
+          status: 'completed',
           content: result.content,
           wordCount: result.metrics.wordCount,
         });
 
-        setGeneratingItems(prev => prev.map(gi => 
+        setGeneratingItems(prev => prev.map(gi =>
           gi.id === item.id ? { ...gi, status: 'completed', progress: 100 } : gi
         ));
 
@@ -398,7 +398,7 @@ export function ReviewExport() {
       } catch (error) {
         const errorMsg = String(error);
         updateContentItem(item.id, { status: 'error', error: errorMsg });
-        setGeneratingItems(prev => prev.map(gi => 
+        setGeneratingItems(prev => prev.map(gi =>
           gi.id === item.id ? { ...gi, status: 'error', error: errorMsg } : gi
         ));
         setGenerationError(errorMsg);
@@ -442,8 +442,8 @@ export function ReviewExport() {
 
   // Check if any AI provider key is configured
   const hasAiProvider = !!(
-    config.geminiApiKey || 
-    config.openaiApiKey || 
+    config.geminiApiKey ||
+    config.openaiApiKey ||
     config.anthropicApiKey ||
     config.openrouterApiKey ||
     config.groqApiKey
@@ -464,33 +464,40 @@ export function ReviewExport() {
 
       {/* Status Indicators */}
       <div className="flex flex-wrap gap-4 text-sm">
-        <StatusBadge 
-          ok={!!hasAiProvider} 
-          label="AI Provider" 
+        <StatusBadge
+          ok={!!hasAiProvider}
+          label="AI Provider"
         />
-        <StatusBadge 
-          ok={!!hasSerper} 
-          label="Serper (YouTube/References)" 
+        <StatusBadge
+          ok={!!hasSerper}
+          label="Serper (YouTube/References)"
         />
-        <StatusBadge 
-          ok={!!(config.enableNeuronWriter && config.neuronWriterApiKey)} 
+        <StatusBadge
+          ok={!!(config.enableNeuronWriter && config.neuronWriterApiKey)}
           label="NeuronWriter (Optional)"
-          optional 
+          optional
         />
-        <StatusBadge 
+        <StatusBadge
           ok={sitemapUrls.length > 0}
           label={`Sitemap (${sitemapUrls.length} pages)`}
-          optional 
+          optional
         />
         <div className={cn(
           "flex items-center gap-2 px-3 py-1.5 rounded-lg border",
           dbLoading ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-400" :
-          dbConnected ? "bg-green-500/10 border-green-500/30 text-green-400" :
-          isOfflineMode ? "bg-blue-500/10 border-blue-500/30 text-blue-400" :
-          "bg-red-500/10 border-red-500/30 text-red-400"
+            dbConnected ? "bg-green-500/10 border-green-500/30 text-green-400" :
+              isOfflineMode ? "bg-blue-500/10 border-blue-500/30 text-blue-400" :
+                tableMissing ? "bg-red-500/10 border-red-500/30 text-red-400" :
+                  "bg-blue-500/10 border-blue-500/30 text-blue-400"
         )}>
           <Database className="w-4 h-4" />
-          <span>{dbLoading ? 'Syncing...' : dbConnected ? 'Database Connected' : isOfflineMode ? 'Local Storage' : 'Database Offline'}</span>
+          <span>
+            {dbLoading ? 'Syncing...' :
+              dbConnected ? 'Database Connected' :
+                isOfflineMode ? 'Local Storage (works offline)' :
+                  tableMissing ? 'Database Setup Required' :
+                    'Local Storage Mode'}
+          </span>
         </div>
       </div>
 
@@ -537,8 +544,8 @@ export function ReviewExport() {
             onClick={() => setShowAnalytics(!showAnalytics)}
             className={cn(
               "px-4 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-colors",
-              showAnalytics 
-                ? "bg-primary text-primary-foreground" 
+              showAnalytics
+                ? "bg-primary text-primary-foreground"
                 : "bg-muted text-foreground hover:bg-muted/80"
             )}
           >
@@ -581,7 +588,7 @@ export function ReviewExport() {
                   className="w-4 h-4 rounded border-border text-primary focus:ring-primary/50"
                 />
               </th>
-              <th 
+              <th
                 className="p-4 text-left text-sm font-medium text-foreground cursor-pointer hover:text-primary"
                 onClick={() => { setSortField('title'); setSortAsc(!sortAsc); }}
               >
@@ -589,7 +596,7 @@ export function ReviewExport() {
                   Title <ArrowUpDown className="w-3 h-3" />
                 </span>
               </th>
-              <th 
+              <th
                 className="p-4 text-left text-sm font-medium text-foreground cursor-pointer hover:text-primary"
                 onClick={() => { setSortField('type'); setSortAsc(!sortAsc); }}
               >
@@ -597,7 +604,7 @@ export function ReviewExport() {
                   Type <ArrowUpDown className="w-3 h-3" />
                 </span>
               </th>
-              <th 
+              <th
                 className="p-4 text-left text-sm font-medium text-foreground cursor-pointer hover:text-primary"
                 onClick={() => { setSortField('status'); setSortAsc(!sortAsc); }}
               >
@@ -658,19 +665,19 @@ export function ReviewExport() {
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
-                      <button 
+                      <button
                         onClick={() => setViewingItem(item)}
                         className={cn(
                           "p-1.5 rounded transition-all",
-                          item.status === 'completed' 
-                            ? "text-primary hover:text-primary hover:bg-primary/20" 
+                          item.status === 'completed'
+                            ? "text-primary hover:text-primary hover:bg-primary/20"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                         )}
                         title={item.status === 'completed' ? "View Content" : "Preview (content not generated yet)"}
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => removeContentItem(item.id)}
                         className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-all"
                         title="Delete"
@@ -730,7 +737,7 @@ function StatusBadge({ ok, label, optional }: { ok: boolean; label: string; opti
       </span>
     );
   }
-  
+
   return (
     <span className={cn(
       "flex items-center gap-1.5",

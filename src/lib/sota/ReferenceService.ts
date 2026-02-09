@@ -6,7 +6,7 @@ const AUTHORITY_DOMAINS: Record<string, number> = {
   // Government & Education
   '.gov': 95,
   '.edu': 90,
-  
+
   // Major Publications
   'nytimes.com': 88,
   'wsj.com': 87,
@@ -15,25 +15,25 @@ const AUTHORITY_DOMAINS: Record<string, number> = {
   'theguardian.com': 85,
   'forbes.com': 82,
   'hbr.org': 88,
-  
+
   // Tech & Industry
   'techcrunch.com': 80,
   'wired.com': 78,
   'arstechnica.com': 79,
   'theverge.com': 77,
-  
+
   // Academic & Research
   'nature.com': 95,
   'sciencedirect.com': 92,
   'pubmed.ncbi.nlm.nih.gov': 94,
   'scholar.google.com': 90,
   'arxiv.org': 88,
-  
+
   // Industry Standards
   'w3.org': 95,
   'ietf.org': 94,
   'iso.org': 95,
-  
+
   // Statistics
   'statista.com': 85,
   'pewresearch.org': 88,
@@ -48,7 +48,7 @@ export class ReferenceService {
   }
 
   async searchReferences(
-    query: string, 
+    query: string,
     type: 'all' | 'academic' | 'news' | 'industry' = 'all',
     maxResults: number = 10
   ): Promise<Reference[]> {
@@ -100,7 +100,7 @@ export class ReferenceService {
   private parseReference(result: Record<string, unknown>): Reference {
     const url = result.link as string || '';
     const domain = this.extractDomain(url);
-    
+
     return {
       title: result.title as string || '',
       url,
@@ -168,7 +168,7 @@ export class ReferenceService {
 
   async validateReference(url: string): Promise<{ valid: boolean; status?: number }> {
     try {
-      const response = await fetch(url, { 
+      const response = await fetch(url, {
         method: 'HEAD',
         signal: AbortSignal.timeout(5000)
       });
@@ -203,24 +203,45 @@ export class ReferenceService {
     return `<sup><a href="${reference.url}" rel="noopener noreferrer">[${index + 1}]</a></sup>`;
   }
 
-  async getTopReferences(keyword: string, count: number = 8): Promise<Reference[]> {
-    // Search across different types
-    const [academic, industry, news] = await Promise.all([
-      this.searchReferences(keyword, 'academic', Math.ceil(count / 2)),
-      this.searchReferences(keyword, 'industry', Math.ceil(count / 3)),
-      this.searchReferences(keyword, 'news', Math.ceil(count / 4))
+  async getTopReferences(keyword: string, count: number = 12): Promise<Reference[]> {
+    // SOTA Reference Fetching - Multi-Source Strategy for 8-12 High-Quality References
+    // Search across ALL types in parallel for comprehensive coverage
+    const [academic, industry, news, general] = await Promise.all([
+      this.searchReferences(keyword, 'academic', 8),  // Target gov, edu, research sites
+      this.searchReferences(keyword, 'industry', 6),  // Forbes, HBR, TechCrunch
+      this.searchReferences(keyword, 'news', 5),      // Reuters, BBC, NYT
+      this.searchReferences(keyword, 'all', 8)        // General high-authority sources
     ]);
 
-    // Combine and deduplicate
-    const all = [...academic, ...industry, ...news];
-    const unique = all.filter((ref, index, self) =>
-      index === self.findIndex(r => r.url === ref.url)
-    );
+    // Combine all results
+    const all = [...academic, ...industry, ...news, ...general];
 
-    // Sort by authority and return top results
-    return unique
-      .sort((a, b) => b.authorityScore - a.authorityScore)
-      .slice(0, count);
+    // Deduplicate by URL (normalized)
+    const seenUrls = new Set<string>();
+    const unique = all.filter(ref => {
+      const normalizedUrl = ref.url.toLowerCase().replace(/\/$/, '').replace('www.', '');
+      if (seenUrls.has(normalizedUrl)) return false;
+      seenUrls.add(normalizedUrl);
+      return true;
+    });
+
+    // Filter out low-quality sources
+    const filtered = unique.filter(ref => {
+      const domain = ref.domain.toLowerCase();
+      const lowQuality = ['pinterest', 'quora', 'reddit', 'facebook', 'twitter', 'x.com',
+        'linkedin', 'instagram', 'youtube', 'tiktok', 'medium'];
+      return !lowQuality.some(d => domain.includes(d));
+    });
+
+    // Sort by authority score (highest first)
+    const sorted = filtered.sort((a, b) => b.authorityScore - a.authorityScore);
+
+    // Return 8-12 references, ensuring we get enough coverage
+    const targetCount = Math.max(8, Math.min(count, 12));
+    const result = sorted.slice(0, targetCount);
+
+    console.log(`[ReferenceService] Found ${result.length} high-quality references for "${keyword}"`);
+    return result;
   }
 }
 
