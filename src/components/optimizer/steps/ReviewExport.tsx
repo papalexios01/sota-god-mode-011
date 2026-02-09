@@ -486,17 +486,19 @@ export function ReviewExport() {
           "flex items-center gap-2 px-3 py-1.5 rounded-lg border",
           dbLoading ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-400" :
             dbConnected ? "bg-green-500/10 border-green-500/30 text-green-400" :
-              isOfflineMode ? "bg-blue-500/10 border-blue-500/30 text-blue-400" :
+              isOfflineMode ? "bg-green-500/10 border-green-500/30 text-green-400" :
                 tableMissing ? "bg-red-500/10 border-red-500/30 text-red-400" :
-                  "bg-blue-500/10 border-blue-500/30 text-blue-400"
+                  dbError ? "bg-red-500/10 border-red-500/30 text-red-400" :
+                    "bg-green-500/10 border-green-500/30 text-green-400"
         )}>
           <Database className="w-4 h-4" />
           <span>
             {dbLoading ? 'Syncing...' :
-              dbConnected ? 'Database Connected' :
-                isOfflineMode ? 'Local Storage (works offline)' :
-                  tableMissing ? 'Database Setup Required' :
-                    'Local Storage Mode'}
+              dbConnected ? '✓ Database Connected' :
+                isOfflineMode ? '✓ Auto-Save Active (Local)' :
+                  tableMissing ? '⚠ Database Setup Required' :
+                    dbError ? '⚠ Database Error' :
+                      '✓ Auto-Save Active'}
           </span>
         </div>
       </div>

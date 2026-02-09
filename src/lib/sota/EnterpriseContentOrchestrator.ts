@@ -571,6 +571,18 @@ Now continue:`;
       this.log('⚠️ No site pages available for internal linking - crawl sitemap first');
     }
 
+    // ENTERPRISE FIX: Preserve references section before post-processing
+    // Self-critique and NeuronWriter improvement loops can strip/corrupt references
+    const referencesRegex = /<!-- SOTA References Section -->[\s\S]*$/i;
+    const refsAltRegex = /<hr>\s*<h2>References[\s\S]*$/i;
+    const savedReferencesMatch = enhancedContent.match(referencesRegex) || enhancedContent.match(refsAltRegex);
+    const savedReferencesHtml = savedReferencesMatch ? savedReferencesMatch[0] : null;
+    if (savedReferencesHtml) {
+      // Strip references before sending to NeuronWriter/self-critique (they'd just add noise)
+      enhancedContent = enhancedContent.replace(referencesRegex, '').replace(refsAltRegex, '').trim();
+      this.log('References: preserved and stripped for post-processing');
+    }
+
     // NeuronWriter content score (after links/cleanup so the score reflects what you'll publish)
     // IMPROVEMENT LOOP: If score < 90%, enhance content with missing terms
     if (neuron) {
@@ -644,14 +656,53 @@ Now continue:`;
           if (allSuggestions.length > 0 || missingHeadings.length > 0) {
             this.log(`Missing: ${allSuggestions.length} terms, ${missingHeadings.length} headings`);
 
-            const termsPerAttempt = Math.min(40, allSuggestions.length);
-            const termsList = allSuggestions.slice(0, termsPerAttempt);
+            // ENTERPRISE FIX: For long content, use targeted insertion instead of full rewrite
+            const usePatchMode = currentContent.length > 10000;
+            
+            if (usePatchMode) {
+              const termsPerAttempt = Math.min(30, allSuggestions.length);
+              const termsList = allSuggestions.slice(0, termsPerAttempt);
+              
+              const patchPrompt = `Generate 3-6 NEW enrichment paragraphs for an article about "${options.keyword}".
+              
+These paragraphs must NATURALLY incorporate these missing SEO terms:
+${termsList.map((t, i) => `${i + 1}. ${t}`).join('\n')}
+${missingHeadings.length > 0 ? `\nAlso create sections for these missing H2 headings:\n${missingHeadings.map(h => `- "${h.text}"`).join('\n')}` : ''}
 
-            const headingsInstruction = missingHeadings.length > 0
-              ? `\n\nMISSING H2 HEADINGS (add these as new sections):\n${missingHeadings.map(h => `- "${h.text}" (used by ${h.usage_pc}% of competitors)`).join('\n')}`
-              : '';
+Rules:
+- Output PURE HTML ONLY
+- Each paragraph 50-100 words, wrapped in <p> tags
+- Use varied contexts: tips, examples, data points, comparisons
+- Include Pro Tip or Warning boxes where appropriate
+- Voice: Direct, punchy, human
+- Terms must flow naturally in sentences - NEVER list them
+- DO NOT repeat existing content
 
-            const improvementPrompt = `You are optimizing this article for a NeuronWriter content score of 90%+. Current score: ${currentScore}%.
+Output ONLY the new HTML content to INSERT.`;
+
+              const patchResult = await this.engine.generateWithModel({
+                prompt: patchPrompt,
+                model: this.config.primaryModel || 'gemini',
+                apiKeys: this.config.apiKeys,
+                systemPrompt: 'Generate SEO enrichment HTML. Output PURE HTML ONLY.',
+                temperature: 0.6 + (attempt * 0.05),
+                maxTokens: 4096,
+              });
+
+              if (patchResult.content && patchResult.content.trim().length > 100) {
+                currentContent = this.insertBeforeConclusion(currentContent, patchResult.content.trim());
+                this.log(`NeuronWriter PATCH: Inserted enrichment content with ${termsList.length} terms`);
+              }
+            } else {
+              // Original full-rewrite approach for shorter content
+              const termsPerAttempt = Math.min(40, allSuggestions.length);
+              const termsList = allSuggestions.slice(0, termsPerAttempt);
+
+              const headingsInstruction = missingHeadings.length > 0
+                ? `\n\nMISSING H2 HEADINGS (add these as new sections):\n${missingHeadings.map(h => `- "${h.text}" (used by ${h.usage_pc}% of competitors)`).join('\n')}`
+                : '';
+
+              const improvementPrompt = `You are optimizing this article for a NeuronWriter content score of 90%+. Current score: ${currentScore}%.
 
 PRIORITY MISSING TERMS (MUST include each one naturally, at least 1-2 times):
 ${termsList.map((t, i) => `${i + 1}. "${t}"`).join('\n')}
@@ -672,22 +723,23 @@ ${currentContent}
 
 Return the COMPLETE improved article with ALL missing terms naturally incorporated.`;
 
-            const improvedResult = await this.engine.generateWithModel({
-              prompt: improvementPrompt,
-              model: this.config.primaryModel || 'gemini',
-              apiKeys: this.config.apiKeys,
-              systemPrompt: `You are an elite SEO content optimizer specializing in NeuronWriter scoring. Your ONLY job: incorporate missing terms naturally to push the score above ${targetScore}%. Preserve all existing content. Output PURE HTML ONLY.`,
-              temperature: 0.6 + (attempt * 0.05),
-              maxTokens: 4096
-            });
+              const improvedResult = await this.engine.generateWithModel({
+                prompt: improvementPrompt,
+                model: this.config.primaryModel || 'gemini',
+                apiKeys: this.config.apiKeys,
+                systemPrompt: `You are an elite SEO content optimizer specializing in NeuronWriter scoring. Your ONLY job: incorporate missing terms naturally to push the score above ${targetScore}%. Preserve all existing content. Output PURE HTML ONLY.`,
+                temperature: 0.6 + (attempt * 0.05),
+                maxTokens: Math.min(16384, Math.max(8192, Math.ceil(currentContent.length / 3)))
+              });
 
-            if (improvedResult.content) {
-              const improved = improvedResult.content.trim();
-              const minLength = currentContent.length * 0.97; // at most 3% shrink
-              if (improved.length >= minLength) {
-                currentContent = improved;
-              } else {
-                this.log(`NeuronWriter: improved draft too short (${improved.length} vs ${currentContent.length}), keeping previous version.`);
+              if (improvedResult.content) {
+                const improved = improvedResult.content.trim();
+                const minLength = currentContent.length * 0.97;
+                if (improved.length >= minLength) {
+                  currentContent = improved;
+                } else {
+                  this.log(`NeuronWriter: improved draft too short (${improved.length} vs ${currentContent.length}), keeping previous version.`);
+                }
               }
             }
           } else {
@@ -716,7 +768,7 @@ ${currentContent}`;
               apiKeys: this.config.apiKeys,
               systemPrompt: 'Elite SEO optimizer. Output PURE HTML ONLY.',
               temperature: 0.65,
-              maxTokens: 4096
+              maxTokens: Math.min(16384, Math.max(8192, Math.ceil(currentContent.length / 3)))
             });
 
             if (improvedResult.content) {
@@ -761,6 +813,17 @@ ${currentContent}`;
         title,
         html: enhancedContent,
       });
+    }
+
+    // ENTERPRISE FIX: Re-append preserved references after all post-processing
+    if (savedReferencesHtml) {
+      // Strip any corrupted references that may have leaked through
+      enhancedContent = enhancedContent
+        .replace(/<!-- SOTA References Section -->[\s\S]*$/i, '')
+        .replace(/<hr>\s*<h2>References[\s\S]*$/i, '')
+        .trim();
+      enhancedContent = `${enhancedContent}\n\n${savedReferencesHtml}`;
+      this.log('References: re-appended after post-processing');
     }
 
     // Phase 4: Validation (parallel quality + E-E-A-T)
@@ -1204,7 +1267,7 @@ Write the complete article now. Make it so valuable that readers bookmark it and
       const consensusResult = await this.engine.generateWithConsensus(prompt, systemPrompt);
       result = { content: consensusResult.finalContent };
     } else {
-      const initialMaxTokens = targetWordCount >= 3000 ? 16384 : 8192;
+      const initialMaxTokens = targetWordCount >= 5000 ? 32768 : targetWordCount >= 3000 ? 16384 : 8192;
       result = await this.engine.generateWithModel({
         prompt,
         model: this.config.primaryModel || 'gemini',
@@ -1486,6 +1549,18 @@ Output ONLY valid JSON.`;
       !originalHtml.toLowerCase().includes(h.toLowerCase().slice(0, 24))
     );
 
+    if (missingTerms.length === 0 && missingEntities.length === 0 && missingHeadings.length === 0) {
+      this.log('Self-critique: No missing terms/entities/headings - content is complete.');
+      return originalHtml;
+    }
+
+    const isLongContent = originalHtml.length > 15000;
+
+    if (isLongContent) {
+      this.log(`Self-critique: PATCH mode for long content (${originalHtml.length} chars)`);
+      return this.selfCritiquePatchMode(originalHtml, params.keyword, params.title, missingTerms, missingEntities, missingHeadings);
+    }
+
     const instruction = [
       'Rewrite ONLY where needed. Keep structure. Output HTML only.',
       'Voice: Alex Hormozi + Tim Ferriss. No fluff. Short paragraphs.',
@@ -1506,8 +1581,12 @@ Output ONLY valid JSON.`;
     const contentLength = originalHtml.length;
     const neededTokens = contentLength > 20000 ? 16384 : 8192;
 
-    const res = await this.engine.generateWithModel({
-      prompt: `ARTICLE TITLE: ${params.title}
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
+
+      const res = await this.engine.generateWithModel({
+        prompt: `ARTICLE TITLE: ${params.title}
 PRIMARY KEYWORD: ${params.keyword}
 
 CURRENT HTML (EDIT THIS, DO NOT REWRITE FROM SCRATCH):
@@ -1515,28 +1594,118 @@ ${originalHtml}
 
 INSTRUCTIONS:
 ${instruction}`,
-      model: this.config.primaryModel || 'gemini',
-      apiKeys: this.config.apiKeys,
-      systemPrompt: 'Elite editor. Output PURE HTML ONLY. Do not add markdown.',
-      temperature: 0.55,
-      maxTokens: neededTokens,
-    });
+        model: this.config.primaryModel || 'gemini',
+        apiKeys: this.config.apiKeys,
+        systemPrompt: 'Elite editor. Output PURE HTML ONLY. Do not add markdown.',
+        temperature: 0.55,
+        maxTokens: neededTokens,
+      });
 
-    const improved = (res.content || '').trim();
-    if (!improved) {
-      this.log('Self-critique: empty response, keeping original HTML.');
+      clearTimeout(timeoutId);
+
+      const improved = (res.content || '').trim();
+      if (!improved) {
+        this.log('Self-critique: empty response, keeping original HTML.');
+        return originalHtml;
+      }
+
+      if (improved.length < originalHtml.length * 0.95) {
+        this.log(
+          `Self-critique: model response too short (${improved.length} vs ${originalHtml.length}), keeping original HTML.`
+        );
+        return originalHtml;
+      }
+
+      return improved;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.log(`Self-critique: failed (${msg}), keeping original HTML.`);
       return originalHtml;
     }
+  }
 
-    // Reject if we lost more than 5% of content: protects long posts & references/FAQ tail
-    if (improved.length < originalHtml.length * 0.95) {
-      this.log(
-        `Self-critique: model response too short (${improved.length} vs ${originalHtml.length}), keeping original HTML.`
-      );
-      return originalHtml;
+  private async selfCritiquePatchMode(
+    html: string,
+    keyword: string,
+    title: string,
+    missingTerms: string[],
+    missingEntities: string[],
+    missingHeadings: string[]
+  ): Promise<string> {
+    let result = html;
+
+    if (missingHeadings.length > 0) {
+      try {
+        const headingsPrompt = `Generate ${missingHeadings.length} NEW HTML sections for an article titled "${title}" about "${keyword}".
+
+For each of these H2 headings, write a complete section (H2 + 2-3 paragraphs):
+${missingHeadings.map((h, i) => `${i + 1}. "${h}"`).join('\n')}
+
+Rules:
+- Output PURE HTML only (h2, h3, p, ul, li, strong tags)
+- Each section should be 100-200 words
+- Include relevant terms naturally: ${missingTerms.slice(0, 15).join(', ')}
+- Include these entities where relevant: ${missingEntities.slice(0, 10).join(', ')}
+- Voice: Direct, punchy, actionable. No AI fluff.
+- Style the H2 tags: <h2 style="color: #1f2937; font-size: 28px; font-weight: 800; margin: 48px 0 24px 0; padding-bottom: 12px; border-bottom: 3px solid #10b981;">
+
+Output ONLY the HTML sections, nothing else.`;
+
+        const res = await this.engine.generateWithModel({
+          prompt: headingsPrompt,
+          model: this.config.primaryModel || 'gemini',
+          apiKeys: this.config.apiKeys,
+          systemPrompt: 'Generate HTML sections. Output PURE HTML ONLY.',
+          temperature: 0.6,
+          maxTokens: 4096,
+        });
+
+        if (res.content && res.content.trim().length > 100) {
+          result = this.insertBeforeConclusion(result, res.content.trim());
+          this.log(`Self-critique PATCH: Added ${missingHeadings.length} missing H2 sections`);
+        }
+      } catch (e) {
+        this.log(`Self-critique PATCH: Failed to add headings: ${e}`);
+      }
     }
 
-    return improved;
+    const allMissing = [...missingTerms.slice(0, 30), ...missingEntities.slice(0, 20)];
+    if (allMissing.length > 0) {
+      try {
+        const termsPrompt = `Generate 3-5 enrichment paragraphs for an article about "${keyword}" titled "${title}".
+
+These paragraphs must NATURALLY include these missing SEO terms/entities:
+${allMissing.map((t, i) => `${i + 1}. "${t}"`).join('\n')}
+
+Rules:
+- Output PURE HTML only (<p> tags with style="color: #374151; font-size: 17px; line-height: 1.9; margin: 20px 0;")
+- Each paragraph should be 50-80 words
+- Include Pro Tip boxes or data points where appropriate
+- Voice: Direct, punchy, human. Use contractions.
+- Every term must appear in a natural sentence
+- DO NOT repeat what's already in the article
+
+Output ONLY the HTML paragraphs, nothing else.`;
+
+        const res = await this.engine.generateWithModel({
+          prompt: termsPrompt,
+          model: this.config.primaryModel || 'gemini',
+          apiKeys: this.config.apiKeys,
+          systemPrompt: 'Generate enrichment HTML paragraphs. Output PURE HTML ONLY.',
+          temperature: 0.6,
+          maxTokens: 3000,
+        });
+
+        if (res.content && res.content.trim().length > 100) {
+          result = this.insertBeforeConclusion(result, res.content.trim());
+          this.log(`Self-critique PATCH: Added enrichment paragraphs with ${allMissing.length} missing terms`);
+        }
+      } catch (e) {
+        this.log(`Self-critique PATCH: Failed to add terms: ${e}`);
+      }
+    }
+
+    return result;
   }
 
   private enforceNeuronwriterCoverage(

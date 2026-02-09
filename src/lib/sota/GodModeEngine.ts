@@ -645,9 +645,9 @@ export class GodModeEngine {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          wpUrl: appConfig.wpUrl,
-          wpUsername: appConfig.wpUsername,
-          wpPassword: appConfig.wpAppPassword,
+          wpUrl: appConfig.wpUrl.startsWith('http') ? appConfig.wpUrl : `https://${appConfig.wpUrl}`,
+          username: appConfig.wpUsername,
+          appPassword: appConfig.wpAppPassword,
           title: content.title,
           content: content.content,
           status: this.options.config.defaultStatus,

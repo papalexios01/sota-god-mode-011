@@ -152,7 +152,9 @@ export function useWordPressPublish() {
 
           if (msg.toLowerCase().includes('failed to fetch') || msg.toLowerCase().includes('network')) {
             throw new Error(
-              'Failed to publish: Network/CORS blocked the request. Ensure the Express server is running or deploy the Supabase Edge Function.'
+              'Failed to publish: Could not reach the API endpoint. ' +
+              'If running locally, ensure the Express dev server is started with `npm run dev:server`. ' +
+              'If deployed, verify the /api/wordpress-publish route exists on your Vercel or Cloudflare deployment.'
             );
           }
 
