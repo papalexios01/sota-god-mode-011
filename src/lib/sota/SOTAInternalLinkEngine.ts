@@ -1,337 +1,321 @@
-/**
- * SOTA Internal Link Engine v3.0.0
- * =================================
- * Nuclear-grade internal linking. Title-based matching, semantic phrase extraction,
- * hard minimum 4 links, even distribution, contextual anchor text.
- *
- * Exports: SOTAInternalLinkEngine, createInternalLinkEngine
- */
+// src/lib/sota/SOTAInternalLinkEngine.ts
+// SOTA Internal Link Engine v3.0 - Enterprise-Grade Contextual Linking
 
-import type { InternalLink } from './types';
+export interface InternalLink {
+  anchor: string;
+  targetUrl: string;
+  context: string;
+  relevanceScore: number;
+  position: 'early' | 'middle' | 'late';
+}
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+export interface SitemapUrl {
+  url: string;
+  title?: string;
+  keywords?: string[];
+}
 
-export interface SitePage {
+interface LinkCandidate {
   url: string;
   title: string;
-  keywords?: string[];
-  slug?: string;
-  description?: string;
-  content?: string;
-}
-
-interface ParagraphInfo {
-  html: string;
-  text: string;
-  index: number;
-  wordCount: number;
-  cumulativeWords: number;
-  hasLink: boolean;
-  startOffset: number;
-  endOffset: number;
-}
-
-interface ScoredCandidate {
-  paragraph: ParagraphInfo;
-  page: SitePage;
-  anchor: string;
-  score: number;
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-const STOP = new Set([
-  'a','an','the','and','or','but','in','on','at','to','for','of','with','by',
-  'from','as','is','was','are','were','be','have','has','had','do','does','did',
-  'will','would','could','should','may','might','can','this','that','these',
-  'those','i','me','my','we','our','you','your','he','him','his','she','her',
-  'it','its','they','them','their','what','which','who','how','when','where',
-  'why','not','no','so','if','than','too','very','just','about','all','also',
-  'any','been','being','both','each','few','more','most','other','some','such',
-  'into','out','up','down','new','way','much','even','only','own','here','there',
-]);
-
-function stem(word: string): string {
-  let w = word.toLowerCase().replace(/[^a-z]/g, '');
-  if (w.length <= 3) return w;
-  if (w.endsWith('ing') && w.length > 5) w = w.slice(0, -3);
-  else if (w.endsWith('tion') && w.length > 6) w = w.slice(0, -4);
-  else if (w.endsWith('ness') && w.length > 6) w = w.slice(0, -4);
-  else if (w.endsWith('ment') && w.length > 6) w = w.slice(0, -4);
-  else if (w.endsWith('able') && w.length > 6) w = w.slice(0, -4);
-  else if (w.endsWith('ies') && w.length > 4) w = w.slice(0, -3) + 'y';
-  else if (w.endsWith('es') && w.length > 4) w = w.slice(0, -2);
-  else if (w.endsWith('ed') && w.length > 4) w = w.slice(0, -2);
-  else if (w.endsWith('s') && !w.endsWith('ss') && w.length > 3) w = w.slice(0, -1);
-  else if (w.endsWith('ly') && w.length > 4) w = w.slice(0, -2);
-  return w;
-}
-
-function significantTokens(text: string): string[] {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s'-]/g, ' ')
-    .split(/\s+/)
-    .filter(w => w.length > 2 && !STOP.has(w))
-    .map(stem);
-}
-
-function extractParagraphs(html: string): ParagraphInfo[] {
-  const results: ParagraphInfo[] = [];
-  const re = /<p[^>]*>([\s\S]*?)<\/p>/gi;
-  let m: RegExpExecArray | null;
-  let idx = 0;
-  let cumWords = 0;
-
-  while ((m = re.exec(html)) !== null) {
-    const text = m[0].replace(/<[^>]*>/g, '').trim();
-    const wc = text.split(/\s+/).filter(Boolean).length;
-    cumWords += wc;
-    results.push({
-      html: m[0],
-      text,
-      index: idx++,
-      wordCount: wc,
-      cumulativeWords: cumWords,
-      hasLink: /<a\s/i.test(m[0]),
-      startOffset: m.index,
-      endOffset: m.index + m[0].length,
-    });
-  }
-  return results;
-}
-
-function countExistingInternalLinks(html: string): number {
-  const matches = html.match(/<a\s[^>]*href\s*=\s*["'][^"']*["'][^>]*>/gi) || [];
-  // Count links that look internal (relative URLs or same-domain)
-  return matches.filter(m => {
-    const href = m.match(/href\s*=\s*["']([^"']*)["']/i)?.[1] || '';
-    return href.startsWith('/') || href.startsWith('#') || !href.startsWith('http');
-  }).length;
+  slug: string;
+  keywords: string[];
+  relevanceScore: number;
 }
 
 /**
- * Find the best natural anchor text in a paragraph for a given target page.
- *
- * Strategy:
- * 1. Extract meaningful stems from the target page title
- * 2. Slide a 3-6 word window over the paragraph text
- * 3. Score each window by stem overlap with the target title
- * 4. Return the highest-scoring window that reads naturally
+ * Extracts meaningful keywords from a URL slug or title.
  */
-function findBestAnchor(paraText: string, page: SitePage): { anchor: string; score: number } | null {
-  const titleStems = new Set(significantTokens(page.title || ''));
-  const keywordStems = new Set((page.keywords || []).flatMap(k => significantTokens(k)));
-  const allTargetStems = new Set([...titleStems, ...keywordStems]);
+function extractKeywordsFromUrl(url: string): string[] {
+  try {
+    const pathname = new URL(url).pathname;
+    const slug = pathname.replace(/^\/|\/$/g, '').split('/').pop() || '';
+    return slug
+      .split(/[-_]/)
+      .filter(w => w.length > 2 && !['the', 'and', 'for', 'with', 'this', 'that', 'from', 'your', 'how', 'what', 'why'].includes(w.toLowerCase()))
+      .map(w => w.toLowerCase());
+  } catch {
+    return [];
+  }
+}
 
-  if (allTargetStems.size === 0) return null;
+/**
+ * Calculates semantic relevance between a candidate URL and the primary keyword/topic.
+ */
+function calculateRelevance(
+  candidate: { url: string; title: string; keywords: string[] },
+  primaryKeyword: string,
+  secondaryKeywords: string[],
+  contentTopic: string
+): number {
+  let score = 0;
+  const primaryLower = primaryKeyword.toLowerCase();
+  const allKeywords = [primaryLower, ...secondaryKeywords.map(k => k.toLowerCase())];
+  const titleLower = candidate.title.toLowerCase();
+  const urlLower = candidate.url.toLowerCase();
+  const topicWords = contentTopic.toLowerCase().split(/\s+/).filter(w => w.length > 3);
 
-  const words = paraText.split(/\s+/);
-  if (words.length < 5) return null;
+  // Exact primary keyword match in title or URL (high relevance)
+  if (titleLower.includes(primaryLower) || urlLower.includes(primaryLower.replace(/\s+/g, '-'))) {
+    score += 40;
+  }
 
-  let best: { anchor: string; score: number } | null = null;
-
-  for (let len = 3; len <= Math.min(7, words.length); len++) {
-    for (let i = 0; i <= words.length - len; i++) {
-      const phrase = words.slice(i, i + len).join(' ');
-      const cleaned = phrase.replace(/[^a-z0-9\s'-]/gi, ' ').trim();
-      if (cleaned.length < 8) continue;
-
-      const phraseStems = significantTokens(cleaned);
-      if (phraseStems.length === 0) continue;
-
-      // Skip if first or last word is a stop word
-      const firstWord = words[i].toLowerCase().replace(/[^a-z]/g, '');
-      const lastWord = words[i + len - 1].toLowerCase().replace(/[^a-z]/g, '');
-      if (STOP.has(firstWord) || STOP.has(lastWord)) continue;
-
-      // Score by overlap
-      let overlap = 0;
-      for (const s of phraseStems) {
-        if (allTargetStems.has(s)) overlap++;
-      }
-      if (overlap === 0) continue;
-
-      const overlapRatio = overlap / phraseStems.length;
-      const titleOverlap = phraseStems.filter(s => titleStems.has(s)).length;
-
-      // Prefer 4-6 word phrases, penalize very short or very long
-      const lengthBonus = (len >= 4 && len <= 6) ? 8 : (len === 3) ? 2 : 0;
-      // Bonus for matching title stems specifically (not just keywords)
-      const titleBonus = titleOverlap * 5;
-
-      const score = overlapRatio * 40 + overlap * 8 + lengthBonus + titleBonus;
-
-      if (!best || score > best.score) {
-        best = { anchor: phrase, score };
-      }
+  // Secondary keyword matches
+  for (const kw of secondaryKeywords) {
+    const kwLower = kw.toLowerCase();
+    if (titleLower.includes(kwLower) || urlLower.includes(kwLower.replace(/\s+/g, '-'))) {
+      score += 20;
     }
   }
 
-  // Fallback: try to find a direct substring match of 2-4 words from the title
-  if (!best || best.score < 15) {
-    const titleWords = (page.title || '').split(/\s+/).filter(w => w.length > 2);
-    const paraLower = paraText.toLowerCase();
+  // Topic word overlap (semantic relevance)
+  for (const word of topicWords) {
+    if (titleLower.includes(word) || urlLower.includes(word)) {
+      score += 8;
+    }
+  }
 
-    for (let len = Math.min(4, titleWords.length); len >= 2; len--) {
-      for (let i = 0; i <= titleWords.length - len; i++) {
-        const snippet = titleWords.slice(i, i + len).join(' ');
-        const snippetLower = snippet.toLowerCase();
-        const pos = paraLower.indexOf(snippetLower);
-        if (pos >= 0) {
-          // Extract the actual text from the paragraph (preserving case)
-          const actual = paraText.substring(pos, pos + snippet.length);
-          const newScore = len * 12 + 10;
-          if (!best || newScore > best.score) {
-            best = { anchor: actual, score: newScore };
+  // Candidate's own keywords match topic
+  for (const ck of candidate.keywords) {
+    if (allKeywords.some(ak => ak.includes(ck) || ck.includes(ak))) {
+      score += 15;
+    }
+    if (topicWords.includes(ck)) {
+      score += 5;
+    }
+  }
+
+  return Math.min(100, score);
+}
+
+/**
+ * Generates rich, contextual anchor text from URL/title — never generic like "click here".
+ */
+function generateRichAnchorText(
+  candidate: LinkCandidate,
+  primaryKeyword: string
+): string {
+  const { title, slug, keywords } = candidate;
+
+  // Best: Use the cleaned title if it's descriptive
+  if (title && title.length > 10 && title.length < 80) {
+    // Remove common prefixes like "How to", "Guide to", etc. if too long
+    let anchor = title;
+    if (anchor.length > 60) {
+      // Shorten to core phrase
+      const corePhrases = anchor.split(/[:\-–—|]/).map(s => s.trim()).filter(s => s.length > 5);
+      anchor = corePhrases[0] || anchor.substring(0, 55).replace(/\s\w+$/, '');
+    }
+    return anchor;
+  }
+
+  // Fallback: Generate from slug keywords
+  if (keywords.length >= 2) {
+    return keywords.slice(0, 4).join(' ').replace(/^\w/, c => c.toUpperCase());
+  }
+
+  // Last fallback: Clean slug
+  return slug
+    .replace(/[-_]/g, ' ')
+    .replace(/^\w/, c => c.toUpperCase())
+    .trim();
+}
+
+/**
+ * Determines optimal positions for internal links within HTML content.
+ * Returns positions: 'early' (first 30%), 'middle' (30-70%), 'late' (70-100%)
+ */
+function assignLinkPositions(count: number): ('early' | 'middle' | 'late')[] {
+  const positions: ('early' | 'middle' | 'late')[] = [];
+
+  // Distribute links evenly across content sections
+  // First link early, last link late, rest distributed
+  if (count >= 1) positions.push('early');
+  if (count >= 2) positions.push('middle');
+  if (count >= 3) positions.push('late');
+  if (count >= 4) positions.push('early');
+  if (count >= 5) positions.push('middle');
+  if (count >= 6) positions.push('late');
+  if (count >= 7) positions.push('middle');
+  if (count >= 8) positions.push('early');
+
+  return positions.slice(0, count);
+}
+
+/**
+ * Inserts internal links into HTML content at contextually appropriate locations.
+ */
+function insertLinksIntoContent(
+  html: string,
+  links: InternalLink[]
+): string {
+  if (!html || links.length === 0) return html;
+
+  // Find all paragraphs
+  const paragraphs = html.match(/<p[^>]*>[\s\S]*?<\/p>/gi) || [];
+  if (paragraphs.length === 0) return html;
+
+  const totalParagraphs = paragraphs.length;
+  const earlyEnd = Math.floor(totalParagraphs * 0.3);
+  const middleEnd = Math.floor(totalParagraphs * 0.7);
+
+  // Track which paragraphs already have links inserted to avoid clustering
+  const usedParagraphIndices = new Set<number>();
+  let result = html;
+
+  for (const link of links) {
+    let targetRange: [number, number];
+
+    switch (link.position) {
+      case 'early':
+        targetRange = [1, Math.max(2, earlyEnd)]; // Skip first paragraph (usually intro)
+        break;
+      case 'middle':
+        targetRange = [earlyEnd, middleEnd];
+        break;
+      case 'late':
+        targetRange = [middleEnd, totalParagraphs - 1]; // Skip last paragraph (usually conclusion CTA)
+        break;
+    }
+
+    // Find the best paragraph to insert the link
+    let bestIdx = -1;
+    let bestScore = -1;
+
+    for (let i = targetRange[0]; i <= targetRange[1] && i < totalParagraphs; i++) {
+      if (usedParagraphIndices.has(i)) continue;
+
+      const p = paragraphs[i];
+      // Skip paragraphs that already have links
+      if (/<a\s/i.test(p)) continue;
+      // Skip very short paragraphs
+      if (p.replace(/<[^>]*>/g, '').trim().length < 40) continue;
+
+      // Prefer paragraphs containing related words
+      const pText = p.replace(/<[^>]*>/g, '').toLowerCase();
+      let relevance = 0;
+      const anchorWords = link.anchor.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+      for (const word of anchorWords) {
+        if (pText.includes(word)) relevance += 10;
+      }
+
+      // Prefer longer paragraphs (more natural insertion points)
+      relevance += Math.min(20, pText.length / 20);
+
+      if (relevance > bestScore) {
+        bestScore = relevance;
+        bestIdx = i;
+      }
+    }
+
+    // If no ideal paragraph found, use any available in range
+    if (bestIdx === -1) {
+      for (let i = targetRange[0]; i <= targetRange[1] && i < totalParagraphs; i++) {
+        if (!usedParagraphIndices.has(i)) {
+          const p = paragraphs[i];
+          if (p.replace(/<[^>]*>/g, '').trim().length >= 30) {
+            bestIdx = i;
+            break;
           }
         }
       }
     }
+
+    if (bestIdx === -1) continue;
+
+    usedParagraphIndices.add(bestIdx);
+
+    const originalParagraph = paragraphs[bestIdx];
+    const linkHtml = `<a href="${link.targetUrl}" title="${link.anchor}">${link.anchor}</a>`;
+
+    // Insert as a contextual sentence at the end of the paragraph, before </p>
+    const contextSentence = ` For more details, see our guide on ${linkHtml}.`;
+    const modifiedParagraph = originalParagraph.replace(
+      /<\/p>/i,
+      `${contextSentence}</p>`
+    );
+
+    result = result.replace(originalParagraph, modifiedParagraph);
   }
 
-  return best && best.score >= 10 ? best : null;
+  return result;
 }
 
-// ---------------------------------------------------------------------------
-// Engine
-// ---------------------------------------------------------------------------
+/**
+ * Main entry point: Selects and inserts 4-8 high-quality contextual internal links.
+ */
+export function generateInternalLinks(
+  sitemapUrls: SitemapUrl[],
+  primaryKeyword: string,
+  secondaryKeywords: string[],
+  contentTopic: string,
+  currentUrl?: string,
+  targetCount: number = 6
+): InternalLink[] {
+  const clampedCount = Math.max(4, Math.min(8, targetCount));
 
-export class SOTAInternalLinkEngine {
-  private pages: SitePage[] = [];
+  if (!sitemapUrls || sitemapUrls.length === 0) return [];
 
-  constructor(pages?: SitePage[]) {
-    this.pages = pages || [];
-  }
+  // Build candidates with relevance scores
+  const candidates: LinkCandidate[] = sitemapUrls
+    .filter(su => {
+      // Exclude current page
+      if (currentUrl && su.url === currentUrl) return false;
+      // Exclude non-content pages
+      const lowerUrl = su.url.toLowerCase();
+      if (/\/(tag|category|author|page|feed|wp-admin|wp-content|cart|checkout|my-account)/i.test(lowerUrl)) return false;
+      return true;
+    })
+    .map(su => {
+      const keywords = su.keywords || extractKeywordsFromUrl(su.url);
+      const title = su.title || '';
+      const slug = new URL(su.url).pathname.replace(/^\/|\/$/g, '').split('/').pop() || '';
 
-  updateSitePages(pages: SitePage[] | undefined): void {
-    this.pages = pages || [];
-  }
-
-  /**
-   * Analyze content and return scored link opportunities.
-   */
-  generateLinkOpportunities(html: string, maxLinks?: number): InternalLink[] {
-    const limit = maxLinks ?? 10;
-    if (this.pages.length === 0) return [];
-
-    const paragraphs = extractParagraphs(html);
-    const candidates: ScoredCandidate[] = [];
-
-    for (const para of paragraphs) {
-      if (para.hasLink || para.wordCount < 12) continue;
-
-      for (const page of this.pages) {
-        const result = findBestAnchor(para.text, page);
-        if (!result) continue;
-
-        candidates.push({
-          paragraph: para,
-          page,
-          anchor: result.anchor,
-          score: result.score,
-        });
-      }
-    }
-
-    // Sort by score descending
-    candidates.sort((a, b) => b.score - a.score);
-
-    // Greedy selection with constraints
-    const selected: InternalLink[] = [];
-    const usedUrls = new Set<string>();
-    const usedParas = new Set<number>();
-    let lastCumulativeWords = 0;
-
-    for (const c of candidates) {
-      if (selected.length >= limit) break;
-      if (usedUrls.has(c.page.url)) continue;
-      if (usedParas.has(c.paragraph.index)) continue;
-
-      // Enforce minimum spacing (250 words between links)
-      if (lastCumulativeWords > 0 && c.paragraph.cumulativeWords - lastCumulativeWords < 250) continue;
-
-      selected.push({
-        anchor: c.anchor,
-        anchorText: c.anchor,
-        targetUrl: c.page.url,
-        url: c.page.url,
-        text: c.anchor,
-        context: c.paragraph.text.substring(0, 120),
-        priority: c.score,
-        relevanceScore: Math.min(100, c.score),
-      });
-
-      usedUrls.add(c.page.url);
-      usedParas.add(c.paragraph.index);
-      lastCumulativeWords = c.paragraph.cumulativeWords;
-    }
-
-    return selected;
-  }
-
-  /**
-   * Inject link <a> tags into HTML content.
-   */
-  injectContextualLinks(html: string, links: InternalLink[]): string {
-    if (links.length === 0) return html;
-
-    let result = html;
-    const paragraphs = extractParagraphs(result);
-
-    // Process from bottom to top to preserve offsets
-    const sortedLinks = [...links];
-
-    for (const link of sortedLinks) {
-      const anchor = link.anchor || link.anchorText || link.text || '';
-      const url = link.targetUrl || link.url || '';
-      if (!anchor || !url || anchor.length < 4) continue;
-
-      const escaped = anchor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-      // Find this anchor in a <p> that doesn't already have a link
-      const anchorRe = new RegExp(
-        `(<p[^>]*>)((?:(?!</p>)[\\s\\S])*?)\\b(${escaped})\\b((?:(?!</p>)[\\s\\S])*?</p>)`,
-        'i'
+      const relevance = calculateRelevance(
+        { url: su.url, title, keywords },
+        primaryKeyword,
+        secondaryKeywords,
+        contentTopic
       );
 
-      const match = anchorRe.exec(result);
-      if (!match) continue;
+      return { url: su.url, title, slug, keywords, relevanceScore: relevance };
+    })
+    .filter(c => c.relevanceScore > 10) // Minimum relevance threshold
+    .sort((a, b) => b.relevanceScore - a.relevanceScore);
 
-      const fullParagraph = match[0];
-      // Skip if paragraph already has a link
-      if (/<a\s/i.test(fullParagraph)) continue;
+  // Select top candidates — ensure diversity (no duplicate slugs/domains)
+  const selected: LinkCandidate[] = [];
+  const usedSlugs = new Set<string>();
 
-      const before = match[1] + match[2];
-      const matched = match[3];
-      const after = match[4];
+  for (const candidate of candidates) {
+    if (selected.length >= clampedCount) break;
+    if (usedSlugs.has(candidate.slug)) continue;
 
-      const replacement = `${before}<a href="${url}" style="color: #059669; text-decoration: underline; text-decoration-color: rgba(5,150,105,0.3); text-underline-offset: 3px; font-weight: 600; transition: all 0.2s ease;">${matched}</a>${after}`;
-
-      result = result.substring(0, match.index) + replacement + result.substring(match.index + fullParagraph.length);
-    }
-
-    return result;
+    usedSlugs.add(candidate.slug);
+    selected.push(candidate);
   }
 
-  /**
-   * Count how many internal links already exist in the content.
-   */
-  countExistingLinks(html: string): number {
-    return countExistingInternalLinks(html);
-  }
+  // Assign positions across the content
+  const positions = assignLinkPositions(selected.length);
+
+  // Generate final links with rich anchor text
+  return selected.map((candidate, i) => ({
+    anchor: generateRichAnchorText(candidate, primaryKeyword),
+    targetUrl: candidate.url,
+    context: `Contextual internal link to related content about ${candidate.keywords.slice(0, 3).join(', ')}`,
+    relevanceScore: candidate.relevanceScore,
+    position: positions[i] || 'middle',
+  }));
 }
 
-// ---------------------------------------------------------------------------
-// Factory — required by EnterpriseContentOrchestrator
-// ---------------------------------------------------------------------------
-
-export function createInternalLinkEngine(sitePages?: SitePage[]): SOTAInternalLinkEngine {
-  return new SOTAInternalLinkEngine(sitePages);
+/**
+ * Inserts generated internal links into existing HTML content.
+ */
+export function applyInternalLinks(
+  htmlContent: string,
+  links: InternalLink[]
+): string {
+  return insertLinksIntoContent(htmlContent, links);
 }
 
-export default SOTAInternalLinkEngine;
+export default { generateInternalLinks, applyInternalLinks };
