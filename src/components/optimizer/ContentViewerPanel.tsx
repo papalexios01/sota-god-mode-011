@@ -813,42 +813,23 @@ function NeuronWriterTab({ neuronData, content, neuronLiveScore }: NeuronWriterT
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Determine if we have structured NeuronWriter data (from our new service)
-  // or legacy flat data (from old integration)
   const hasStructuredData = neuronData && (
     Array.isArray(neuronData.basicKeywords) ||
     Array.isArray(neuronData.extendedKeywords) ||
     Array.isArray(neuronData.entities)
   );
 
-  // Legacy fallback: if neuronData has a flat `terms` array
   const legacyTerms: any[] = !hasStructuredData && (neuronData as any)?.terms
     ? (neuronData as any).terms
     : [];
 
   const contentLower = content.replace(/<[^>]*>/g, ' ').toLowerCase();
 
-  // Helper: count term occurrences in content
   function countTermInContent(term: string): number {
     const termLower = term.toLowerCase();
     const regex = new RegExp(termLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
     const matches = contentLower.match(regex);
     return matches ? matches.length : 0;
-  }
-
-  // Helper: determine term status
-  function getTermStatus(term: string, recommended: number = 1): 'missing' | 'underused' | 'optimal' | 'overused' {
-    const count = countTermInContent(term);
-    if (count === 0) return 'missing';
-    if (count < recommended) return 'underused';
-    if (count <= recommended * 1.5) return 'optimal';
-    return 'overused';
-  }
-
-  // Filter function
-  function shouldShowTerm(term: string, recommended: number = 1): boolean {
-    if (termFilter === 'all') return true;
-    return getTermStatus(term, recommended) === termFilter;
   }
 
   if (!neuronData) {
@@ -876,13 +857,12 @@ function NeuronWriterTab({ neuronData, content, neuronLiveScore }: NeuronWriterT
           </h3>
           {neuronData.keyword && (
             <span className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-lg text-sm font-medium">
-              "{neuronData.keyword}"
+              &quot;{neuronData.keyword}&quot;
             </span>
           )}
         </div>
         {neuronLiveScore ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Main Score */}
             <div className="col-span-2 md:col-span-1">
               <div className="relative w-24 h-24 mx-auto">
                 <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
@@ -899,7 +879,6 @@ function NeuronWriterTab({ neuronData, content, neuronLiveScore }: NeuronWriterT
                 </div>
               </div>
             </div>
-            {/* Metrics */}
             <div className="flex flex-col justify-center">
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-3 h-3 rounded-full bg-green-500" />
@@ -926,7 +905,6 @@ function NeuronWriterTab({ neuronData, content, neuronLiveScore }: NeuronWriterT
           <p className="text-muted-foreground text-sm">Score data not available.</p>
         )}
 
-        {/* Recommendations */}
         {hasStructuredData && neuronData.recommendations && (
           <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
             <div className="bg-muted/20 rounded-lg p-3">
@@ -975,103 +953,47 @@ function NeuronWriterTab({ neuronData, content, neuronLiveScore }: NeuronWriterT
       {/* ── Structured Sections (new NeuronWriterService data) ── */}
       {hasStructuredData ? (
         <>
-          {/* Basic Keywords Section */}
-          <NeuronSection
-            title="Basic Keywords"
-            subtitle="High priority — MUST use all"
-            icon={<Target className="w-5 h-5 text-red-400" />}
-            accentColor="red"
-            isExpanded={expandedSections.basic}
-            onToggle={() => toggleSection('basic')}
-            count={neuronData.basicKeywords?.length || 0}
-          >
+          {/* Basic Keywords */}
+          <NeuronSection title="Basic Keywords" subtitle="High priority — MUST use all" icon={<Target className="w-5 h-5 text-red-400" />} accentColor="red" isExpanded={expandedSections.basic} onToggle={() => toggleSection('basic')} count={neuronData.basicKeywords?.length || 0}>
             <TermGrid terms={neuronData.basicKeywords || []} content={contentLower} filter={termFilter} />
           </NeuronSection>
 
-          {/* Extended Keywords Section */}
-          <NeuronSection
-            title="Extended Keywords"
-            subtitle="Medium priority — use most"
-            icon={<Layers className="w-5 h-5 text-blue-400" />}
-            accentColor="blue"
-            isExpanded={expandedSections.extended}
-            onToggle={() => toggleSection('extended')}
-            count={neuronData.extendedKeywords?.length || 0}
-          >
+          {/* Extended Keywords */}
+          <NeuronSection title="Extended Keywords" subtitle="Medium priority — use most" icon={<Layers className="w-5 h-5 text-blue-400" />} accentColor="blue" isExpanded={expandedSections.extended} onToggle={() => toggleSection('extended')} count={neuronData.extendedKeywords?.length || 0}>
             <TermGrid terms={neuronData.extendedKeywords || []} content={contentLower} filter={termFilter} />
           </NeuronSection>
 
-          {/* Entities Section */}
-          <NeuronSection
-            title="Entities"
-            subtitle="Semantic relevance — include naturally"
-            icon={<Tag className="w-5 h-5 text-purple-400" />}
-            accentColor="purple"
-            isExpanded={expandedSections.entities}
-            onToggle={() => toggleSection('entities')}
-            count={neuronData.entities?.length || 0}
-          >
+          {/* Entities */}
+          <NeuronSection title="Entities" subtitle="Semantic relevance — include naturally" icon={<Tag className="w-5 h-5 text-purple-400" />} accentColor="purple" isExpanded={expandedSections.entities} onToggle={() => toggleSection('entities')} count={neuronData.entities?.length || 0}>
             <TermGrid terms={neuronData.entities || []} content={contentLower} filter={termFilter} />
           </NeuronSection>
 
           {/* H1 Suggestions */}
           {neuronData.h1Suggestions && neuronData.h1Suggestions.length > 0 && (
-            <NeuronSection
-              title="H1 Title Suggestions"
-              subtitle="Recommended H1 titles from top competitors"
-              icon={<Heading1 className="w-5 h-5 text-amber-400" />}
-              accentColor="amber"
-              isExpanded={expandedSections.h1}
-              onToggle={() => toggleSection('h1')}
-              count={neuronData.h1Suggestions.length}
-            >
+            <NeuronSection title="H1 Title Suggestions" subtitle="Recommended H1 titles from top competitors" icon={<Type className="w-5 h-5 text-amber-400" />} accentColor="amber" isExpanded={expandedSections.h1} onToggle={() => toggleSection('h1')} count={neuronData.h1Suggestions.length}>
               <HeadingList headings={neuronData.h1Suggestions} />
             </NeuronSection>
           )}
 
           {/* H2 Suggestions */}
           {neuronData.h2Suggestions && neuronData.h2Suggestions.length > 0 && (
-            <NeuronSection
-              title="H2 Heading Suggestions"
-              subtitle="Use or adapt these headings in your content"
-              icon={<Heading2 className="w-5 h-5 text-emerald-400" />}
-              accentColor="emerald"
-              isExpanded={expandedSections.h2}
-              onToggle={() => toggleSection('h2')}
-              count={neuronData.h2Suggestions.length}
-            >
+            <NeuronSection title="H2 Heading Suggestions" subtitle="Use or adapt these headings in your content" icon={<Hash className="w-5 h-5 text-emerald-400" />} accentColor="emerald" isExpanded={expandedSections.h2} onToggle={() => toggleSection('h2')} count={neuronData.h2Suggestions.length}>
               <HeadingList headings={neuronData.h2Suggestions} />
             </NeuronSection>
           )}
 
           {/* H3 Suggestions */}
           {neuronData.h3Suggestions && neuronData.h3Suggestions.length > 0 && (
-            <NeuronSection
-              title="H3 Subheading Suggestions"
-              subtitle="Sub-topics to cover within sections"
-              icon={<Heading3 className="w-5 h-5 text-cyan-400" />}
-              accentColor="cyan"
-              isExpanded={expandedSections.h3}
-              onToggle={() => toggleSection('h3')}
-              count={neuronData.h3Suggestions.length}
-            >
+            <NeuronSection title="H3 Subheading Suggestions" subtitle="Sub-topics to cover within sections" icon={<List className="w-5 h-5 text-cyan-400" />} accentColor="cyan" isExpanded={expandedSections.h3} onToggle={() => toggleSection('h3')} count={neuronData.h3Suggestions.length}>
               <HeadingList headings={neuronData.h3Suggestions} />
             </NeuronSection>
           )}
 
           {/* Content Gaps */}
           {neuronData.recommendations?.contentGaps && neuronData.recommendations.contentGaps.length > 0 && (
-            <NeuronSection
-              title="Content Gaps"
-              subtitle="Critical missing terms — add these to boost score"
-              icon={<AlertTriangle className="w-5 h-5 text-red-400" />}
-              accentColor="red"
-              isExpanded={expandedSections.gaps}
-              onToggle={() => toggleSection('gaps')}
-              count={neuronData.recommendations.contentGaps.length}
-            >
+            <NeuronSection title="Content Gaps" subtitle="Critical missing terms — add these to boost score" icon={<AlertTriangle className="w-5 h-5 text-red-400" />} accentColor="red" isExpanded={expandedSections.gaps} onToggle={() => toggleSection('gaps')} count={neuronData.recommendations.contentGaps.length}>
               <div className="flex flex-wrap gap-2">
-                {neuronData.recommendations.contentGaps.map((term, i) => (
+                {neuronData.recommendations.contentGaps.map((term: string, i: number) => (
                   <span key={i} className="px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-sm font-medium">
                     {term}
                   </span>
@@ -1098,14 +1020,18 @@ function NeuronWriterTab({ neuronData, content, neuronLiveScore }: NeuronWriterT
                     </tr>
                   </thead>
                   <tbody>
-                    {neuronData.competitorData.slice(0, 10).map((comp, i) => (
+                    {neuronData.competitorData.slice(0, 10).map((comp: any, i: number) => (
                       <tr key={i} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
                         <td className="py-2 px-3 text-muted-foreground">{i + 1}</td>
-                        <td className="py-2 px-3"><a href={comp.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate block max-w-[200px]">{new URL(comp.url).hostname}</a></td>
+                        <td className="py-2 px-3">
+                          <a href={comp.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate block max-w-[200px]">
+                            {(() => { try { return new URL(comp.url).hostname; } catch { return comp.url; } })()}
+                          </a>
+                        </td>
                         <td className="py-2 px-3 text-foreground truncate max-w-[250px]">{comp.title}</td>
-                        <td className="py-2 px-3 text-right text-muted-foreground">{comp.wordCount.toLocaleString()}</td>
+                        <td className="py-2 px-3 text-right text-muted-foreground">{(comp.wordCount || 0).toLocaleString()}</td>
                         <td className="py-2 px-3 text-right">
-                          <span className={cn("font-medium", comp.score >= 70 ? "text-green-400" : comp.score >= 50 ? "text-yellow-400" : "text-muted-foreground")}>{comp.score}%</span>
+                          <span className={cn("font-medium", (comp.score || 0) >= 70 ? "text-green-400" : (comp.score || 0) >= 50 ? "text-yellow-400" : "text-muted-foreground")}>{comp.score || 0}%</span>
                         </td>
                       </tr>
                     ))}
@@ -1161,7 +1087,7 @@ function NeuronWriterTab({ neuronData, content, neuronLiveScore }: NeuronWriterT
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// HELPER COMPONENTS
+// HELPER COMPONENTS (defined OUTSIDE NeuronWriterTab)
 // ═══════════════════════════════════════════════════════════════════
 
 function QualityMetric({ label, value }: { label: string; value: number }) {
@@ -1192,7 +1118,7 @@ interface NeuronSectionProps {
   children: React.ReactNode;
 }
 
-function NeuronSection({ title, subtitle, icon, accentColor, isExpanded, onToggle, count, children }: NeuronSectionProps) {
+function NeuronSection({ title, subtitle, icon, isExpanded, onToggle, count, children }: NeuronSectionProps) {
   return (
     <div className="bg-card/50 border border-border rounded-xl overflow-hidden">
       <button
@@ -1222,8 +1148,14 @@ function NeuronSection({ title, subtitle, icon, accentColor, isExpanded, onToggl
 
 // ── Term Grid (for basic/extended/entity terms) ──
 
+interface NeuronWriterTermDataForGrid {
+  term: string;
+  weight: number;
+  recommended: number;
+}
+
 interface TermGridProps {
-  terms: NeuronWriterTermData[];
+  terms: NeuronWriterTermDataForGrid[];
   content: string;
   filter: 'all' | 'missing' | 'underused' | 'optimal';
 }
@@ -1237,7 +1169,8 @@ function TermGrid({ terms, content, filter }: TermGridProps) {
     const termLower = t.term.toLowerCase();
     const regex = new RegExp(termLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
     const count = (content.match(regex) || []).length;
-    const status = count === 0 ? 'missing' : count < t.recommended ? 'underused' : 'optimal';
+    const recommended = t.recommended || 1;
+    const status = count === 0 ? 'missing' : count < recommended ? 'underused' : 'optimal';
     return filter === 'all' || status === filter;
   });
 
@@ -1247,7 +1180,6 @@ function TermGrid({ terms, content, filter }: TermGridProps) {
 
   return (
     <div className="space-y-1.5">
-      {/* Column Headers */}
       <div className="grid grid-cols-[1fr_60px_60px_80px_120px] gap-2 px-3 py-1 text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
         <span>Term</span>
         <span className="text-center">Weight</span>
@@ -1259,7 +1191,8 @@ function TermGrid({ terms, content, filter }: TermGridProps) {
         const termLower = term.term.toLowerCase();
         const regex = new RegExp(termLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
         const count = (content.match(regex) || []).length;
-        const status = count === 0 ? 'missing' : count < term.recommended ? 'underused' : count <= term.recommended * 1.5 ? 'optimal' : 'overused';
+        const recommended = term.recommended || 1;
+        const status = count === 0 ? 'missing' : count < recommended ? 'underused' : count <= recommended * 1.5 ? 'optimal' : 'overused';
 
         return (
           <div key={i} className={cn(
@@ -1276,14 +1209,14 @@ function TermGrid({ terms, content, filter }: TermGridProps) {
             <span className={cn("text-center font-bold text-xs", count > 0 ? "text-foreground" : "text-red-400")}>
               {count}
             </span>
-            <span className="text-center text-muted-foreground text-xs">{term.recommended}×</span>
+            <span className="text-center text-muted-foreground text-xs">{recommended}×</span>
             <div className="flex items-center justify-end gap-1.5">
               <div className="h-1.5 w-16 bg-muted rounded-full overflow-hidden">
                 <div className={cn("h-full rounded-full transition-all",
                   status === 'optimal' ? "bg-green-500" :
                   status === 'underused' ? "bg-yellow-500" :
                   status === 'missing' ? "bg-red-500" : "bg-blue-500"
-                )} style={{ width: `${Math.min(100, (count / Math.max(1, term.recommended)) * 100)}%` }} />
+                )} style={{ width: `${Math.min(100, (count / Math.max(1, recommended)) * 100)}%` }} />
               </div>
               <span className={cn(
                 "text-[10px] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider whitespace-nowrap",
@@ -1304,33 +1237,14 @@ function TermGrid({ terms, content, filter }: TermGridProps) {
 
 // ── Heading Suggestion List ──
 
-function HeadingList({ headings }: { headings: NeuronWriterHeadingData[] }) {
-  if (!headings || headings.length === 0) {
-    return <p className="text-muted-foreground text-sm text-center py-4">No heading suggestions.</p>;
-  }
+interface NeuronWriterHeadingDataForList {
+  text: string;
+  level: string;
+  source?: string;
+  relevanceScore?: number;
+}
 
-  return (
-    <div className="space-y-2">
-      {headings.map((h, i) => (
-        <div key={i} className="flex items-start gap-3 p-3 bg-muted/20 rounded-lg hover:bg-muted/30 transition-colors">
-          <span className={cn(
-            "flex-shrink-0 px-2 py-0.5 rounded font-mono text-xs font-bold uppercase",
-            h.level === 'h1' ? "bg-amber-500/20 text-amber-400" :
-            h.level === 'h2' ? "bg-emerald-500/20 text-emerald-400" :
-            "bg-cyan-500/20 text-cyan-400"
-          )}>
-            {h.level}
-          </span>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">{h.text}</p>
-            {h.source && (
-              <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{h.source}</p>
-            )}
-          </div>
-          {h.relevanceScore !== undefined && (
-            <div className="flex items-center gap-1 flex-shrink"></div>
-
-function HeadingList({ headings }: { headings: NeuronWriterHeadingData[] }) {
+function HeadingList({ headings }: { headings: NeuronWriterHeadingDataForList[] }) {
   if (!headings || headings.length === 0) {
     return <p className="text-muted-foreground text-sm text-center py-4">No heading suggestions.</p>;
   }
@@ -1387,4 +1301,3 @@ function HeadingList({ headings }: { headings: NeuronWriterHeadingData[] }) {
 // ═══════════════════════════════════════════════════════════════════
 
 export default ContentViewerPanel;
-
