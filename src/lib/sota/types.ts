@@ -1,4 +1,5 @@
 // SOTA ENTERPRISE TYPES - WP Content Optimizer Pro
+// 🔧 CHANGED: Added PostProcessing, VisualBreak, and extended InternalLink types
 
 import type { NeuronWriterAnalysis, NeuronWriterHeading, NeuronWriterEntity } from './NeuronWriterService';
 
@@ -79,6 +80,7 @@ export interface InternalLink {
   context: string;
   priority: number;
   relevanceScore: number;
+  paragraphIndex?: number; // 🆕 NEW: Track which paragraph the link was placed in
 }
 
 export interface SchemaMarkup {
@@ -121,7 +123,7 @@ export interface ContentMetrics {
 export interface GeneratedContent {
   id: string;
   title: string;
-  seoTitle?: string; // SEO-optimized title for WordPress/meta tags (may differ from display title)
+  seoTitle?: string;
   content: string;
   metaDescription: string;
   slug: string;
@@ -140,6 +142,9 @@ export interface GeneratedContent {
   // NeuronWriter (optional)
   neuronWriterQueryId?: string;
   neuronWriterAnalysis?: NeuronWriterAnalysis;
+
+  // 🆕 NEW: Post-processing metadata
+  postProcessing?: PostProcessingResult;
 }
 
 export interface YouTubeVideo {
@@ -196,4 +201,34 @@ export interface CacheEntry<T> {
   data: T;
   timestamp: number;
   ttl: number;
+}
+
+// =====================================================================
+// 🆕 NEW: Visual Break & Post-Processing Types
+// =====================================================================
+
+/** A single "wall of text" violation where consecutive <p> blocks exceed the word limit. */
+export interface WallOfTextViolation {
+  /** Zero-based index of the first paragraph block in the consecutive run. */
+  blockIndex: number;
+  /** Number of words in this consecutive paragraph run. */
+  wordCount: number;
+}
+
+/** Result of validating visual breaks in HTML content. */
+export interface VisualBreakValidationResult {
+  /** True if no violations were found. */
+  valid: boolean;
+  /** List of violations where consecutive paragraph text exceeds the limit. */
+  violations: WallOfTextViolation[];
+}
+
+/** Result of the ContentPostProcessor pipeline. */
+export interface PostProcessingResult {
+  /** Processed HTML content. */
+  html: string;
+  /** Any remaining violations after processing (should be empty). */
+  violations: WallOfTextViolation[];
+  /** Whether the processor modified the content. */
+  wasModified: boolean;
 }
