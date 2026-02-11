@@ -1,57 +1,81 @@
-import express from "express";
-import { requestIdMiddleware, timingMiddleware, basicRateLimit } from "./middleware";
-import { registerRoutes } from "./routes";
+// src/lib/sota/index.ts
+// SOTA Content Engine - Enterprise Barrel Export v3.0
 
-const app = express();
+// Core Types
+export type {
+  GeneratedContent,
+  ContentGenerationOptions,
+  QualityScore,
+  ContentMetrics,
+  NeuronWriterAnalysis,
+} from './types';
 
-app.use(requestIdMiddleware);
-app.use(timingMiddleware);
-app.use(basicRateLimit({ windowMs: 60_000, max: 120 }));
-app.use(express.json({ limit: "10mb" }));
+// Internal Link Engine
+export {
+  generateInternalLinks,
+  applyInternalLinks,
+} from './SOTAInternalLinkEngine';
+export type { InternalLink, SitemapUrl } from './SOTAInternalLinkEngine';
 
-// SECURITY FIX: Restrict CORS to known origins instead of wildcard "*"
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "")
-  .split(",")
-  .map((o) => o.trim())
-  .filter(Boolean);
+// NeuronWriter Service
+export {
+  fetchNeuronWriterAnalysis,
+  buildNeuronWriterPromptSection,
+  scoreContentAgainstNeuron,
+} from './NeuronWriterService';
+export type {
+  NeuronWriterTermData,
+  NeuronWriterHeadingData,
+} from './NeuronWriterService';
 
-const corsMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const origin = req.headers.origin || "";
+// Content Prompt Builder
+export {
+  buildMasterSystemPrompt,
+  buildMasterUserPrompt,
+} from './prompts/masterContentPrompt';
+export type { ContentPromptConfig } from './prompts/masterContentPrompt';
 
-  // In development, allow localhost origins
-  const isDev = process.env.NODE_ENV !== "production";
-  const isAllowed =
-    ALLOWED_ORIGINS.length === 0
-      ? isDev // If no origins configured, allow all in dev only
-      : ALLOWED_ORIGINS.includes(origin);
+// Content Post-Processor
+export {
+  enhanceHtmlDesign,
+  injectMissingTerms,
+  addFaqSection,
+  postProcessContent,
+} from './ContentPostProcessor';
 
-  if (isAllowed || isDev) {
-    res.header("Access-Control-Allow-Origin", origin || "*");
-  }
+// Schema Generator
+export { SchemaGenerator } from './SchemaGenerator';
 
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "authorization, x-client-info, apikey, content-type, x-neuronwriter-key");
+// EEAT Validator
+export { EEATValidator } from './EEATValidator';
 
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-  next();
-};
+// Quality Validator
+export { QualityValidator } from './QualityValidator';
 
-app.use(corsMiddleware);
-registerRoutes(app);
+// Performance Tracker
+export {
+  PerformanceTracker,
+  globalPerformanceTracker,
+} from './PerformanceTracker';
+export type { AnalyticsDashboardData } from './PerformanceTracker';
 
-app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error("[Server] Unhandled error:", err.message);
-  if (!res.headersSent) {
-    res.status(500).json({
-      success: false,
-      error: err.message || "Internal server error",
-    });
-  }
-});
+// Reference Service
+export { ReferenceService } from './ReferenceService';
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`[Server] API server running on port ${PORT}`);
-});
+// YouTube Service
+export { YouTubeService } from './YouTubeService';
+
+// SERP Analyzer
+export { SERPAnalyzer } from './SERPAnalyzer';
+
+// SEO Health Scorer
+export { SEOHealthScorer } from './SEOHealthScorer';
+
+// God Mode Engine
+export { GodModeEngine } from './GodModeEngine';
+
+// Cache
+export { SOTACache } from './cache';
+
+// Sanitize
+export { sanitizeContent } from './sanitize';
