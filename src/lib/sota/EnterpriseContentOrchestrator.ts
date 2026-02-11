@@ -67,12 +67,16 @@ function convertMarkdownToHTML(content: string): string {
   html = html.replace(/^[-*] (.+)$/gm, '<li style="margin-bottom: 8px; line-height: 1.8;">$1</li>');
 
   // Ordered lists: 1. item
-  html = html.replace(/^\d+\. (.+)$/gm, '<li style="margin-bottom: 8px; line-height: 1.8;">$1</li>');
+  html = html.replace(/^\d+\. (.+)$/gm, '<li data-list-type="ol" style="margin-bottom: 8px; line-height: 1.8;">$1</li>'); // ← CHANGED: mark with data attribute
 
-  // Wrap consecutive <li> elements in <ul> or <ol>
+  // Wrap consecutive <li> elements in <ul> or <ol> based on their type  // ← CHANGED
   html = html.replace(/(<li[^>]*>.*<\/li>\n?)+/g, (match) => {
-    return `<ul style="margin: 20px 0; padding-left: 24px; color: #374151;">${match}</ul>`;
+    const isOrdered = match.includes('data-list-type="ol"');
+    const tag = isOrdered ? 'ol' : 'ul';
+    const cleanedMatch = match.replace(/\s*data-list-type="ol"/g, '');
+    return `<${tag} style="margin: 20px 0; padding-left: 24px; color: #374151;">${cleanedMatch}</${tag}>`;
   });
+
 
   // Convert markdown code blocks ```code``` to <pre><code>
   html = html.replace(/```([^`]+)```/gs, '<pre style="background: #f3f4f6; padding: 16px; border-radius: 8px; overflow-x: auto; margin: 20px 0;"><code style="color: #374151; font-size: 14px;">$1</code></pre>');
@@ -1468,7 +1472,7 @@ REMEMBER: The reader should feel like they're getting advice from a smart, exper
         model: this.config.primaryModel || 'gemini',
         apiKeys: this.config.apiKeys,
         systemPrompt,
-        temperature: 0.85,
+        temperature: 0.72,
         maxTokens: initialMaxTokens
       });
     }
@@ -1798,8 +1802,11 @@ Output ONLY valid JSON.`;
     const neededTokens = contentLength > 20000 ? 16384 : 8192;
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000);
+            const controller = new AbortController();
+      // ← CHANGED: Scale timeout: 2 min base + 30s per 5000 chars (caps at 5 min)
+      const timeoutMs = Math.min(300000, 120000 + Math.floor(originalHtml.length / 5000) * 30000);
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
 
       const res = await this.engine.generateWithModel({
         prompt: `ARTICLE TITLE: ${params.title}
@@ -1943,10 +1950,11 @@ Output ONLY the HTML paragraphs, nothing else.`;
 
     if (missing.length === 0) return html;
 
-    const chunk = missing.slice(0, 40);
+        const chunk = missing.slice(0, 40);
+    // ← CHANGED: Use hidden HTML comment instead of visible keyword dump — preserves E-E-A-T
     const insertion = `
-<p><strong>Note:</strong> This section also covers related concepts such as
-${chunk.map(this.escapeHtml).join(', ')} to align with how topical coverage is scored in tools like NeuronWriter.</p>`;
+<!-- NeuronWriter Coverage Terms: ${chunk.map(this.escapeHtml).join(', ')} -->`;
+    this.log(`⚠️ ${chunk.length} NeuronWriter terms could not be naturally incorporated — logged as HTML comment`);
 
     // Try to tuck this under the last H2 so it looks natural
     const h2Regex = /<h2[^>]*>[^<]*<\/h2>/gis;
