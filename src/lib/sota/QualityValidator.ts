@@ -230,7 +230,8 @@ export function calculateQualityScore(
 
   // --- E-E-A-T (0-100) ---
   const eeatScore = (() => {
-    let score = 40;
+    let score = 15; // CHANGED: Lowered from 40 — must earn E-E-A-T signals
+
 
     const citationMatches = contentLower.match(/according to|study\b|research\b|report\b|published|journal|university|institute/g);
     const citationCount = citationMatches?.length || 0;
@@ -266,7 +267,8 @@ export function calculateQualityScore(
 
   // --- UNIQUENESS (0-100) ---
   const uniquenessScore = (() => {
-    let score = 85;
+    let score = 30; // CHANGED: Lowered from 85 — must demonstrate genuine uniqueness
+
 
     score -= aiPhrases.length * 4;
     if (aiPhrases.length > 0) {
@@ -282,12 +284,12 @@ export function calculateQualityScore(
     const hasShortSentences = textContent.split(/[.!?]/).filter(s => s.trim().split(/\s+/).length <= 5 && s.trim().length > 0).length;
     if (hasShortSentences >= 5) score += 4;
 
-    return Math.min(100, Math.max(60, score));
+        return Math.min(100, Math.max(20, score)); // CHANGED: Floor lowered from 60 to 20
   })();
 
-  // --- FACT ACCURACY (0-100) ---
+    // --- FACT ACCURACY (0-100) ---
   const factAccuracyScore = (() => {
-    let score = 72;
+    let score = 25; // CHANGED: Lowered from 72 — must include verifiable facts
 
     const statMatches = content.match(/\d+(?:\.\d+)?%|\d+(?:,\d{3})+|\d+\s*(?:million|billion|thousand)/g);
     const statCount = statMatches?.length || 0;
