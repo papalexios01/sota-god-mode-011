@@ -1875,5 +1875,5 @@ ${finalItems.map((it) => {
 }
 
 export function createOrchestrator(config: OrchestratorConfig): EnterpriseContentOrchestrator {
-  return new EnterpriseContentOrchestrator(config);
+  return new EnterpriseContentOrchestrator(config); 
 }
