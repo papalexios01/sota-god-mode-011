@@ -341,11 +341,12 @@ export class NeuronWriterService {
 
     const normalizedKeyword = keyword.toLowerCase().trim();
 
+    const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
     const cacheKey = NeuronWriterService.makeQueryCacheKey(projectId, keyword);
     const cached = NeuronWriterService.queryCache.get(cacheKey);
-    if (cached?.id) {
+    if (cached?.id && cached.updatedAt && (Date.now() - cached.updatedAt < CACHE_TTL_MS)) {
       console.log(
-        `[NeuronWriter] Using cached query for "${keyword}" (ID: ${cached.id}, status: ${cached.status || 'unknown'})`
+        `[NeuronWriter] Using cached query for "${keyword}" (ID: ${cached.id}, status: ${cached.status || 'unknown'}, age: ${Math.round((Date.now() - cached.updatedAt) / 1000)}s)`
       );
       return {
         success: true,
@@ -357,6 +358,7 @@ export class NeuronWriterService {
         },
       };
     }
+
 
     const statuses: Array<'ready' | 'waiting' | 'in progress'> = ['ready', 'waiting', 'in progress'];
     const listResults = await Promise.all(
