@@ -1,32 +1,42 @@
 /// <reference types="@cloudflare/workers-types" />
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+const corsHeaders: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*", // TODO: Restrict in production
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-async function fetchWithTimeout(
-  url: string,
-  timeout: number = 90000
-): Promise<Response> {
+function isPublicUrl(input: string): boolean {
+  let parsed: URL;
+  try { parsed = new URL(input); } catch { return false; }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+  const h = parsed.hostname.toLowerCase();
+  if (h === "localhost" || h === "[::1]" || h.endsWith(".local") || h.endsWith(".internal")) return false;
+  if (h === "metadata.google.internal" || h === "instance-data") return false;
+  if (/^0x[0-9a-f]+$/i.test(h) || /^\d+$/.test(h)) return false;
+  const p = h.split(".").map(Number);
+  if (p.length === 4 && p.every((n) => !isNaN(n) && n >= 0 && n <= 255)) {
+    if (p[0] === 127 || p[0] === 10 || p[0] === 0) return false;
+    if (p[0] === 172 && p[1] >= 16 && p[1] <= 31) return false;
+    if (p[0] === 192 && p[1] === 168) return false;
+    if (p[0] === 169 && p[1] === 254) return false;
+  }
+  return true;
+}
+
+async function fetchWithTimeout(url: string, timeout = 90_000): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
-
   try {
-    const response = await fetch(url, {
+    return await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; ContentOptimizer/1.0)",
-        "Accept": "application/xml, text/xml, text/html, */*",
+        "User-Agent": "Mozilla/5.0 (compatible; ContentOptimizer/3.0)",
+        Accept: "application/xml, text/xml, text/html, */*",
       },
       signal: controller.signal,
     });
-
+  } finally {
     clearTimeout(timeoutId);
-    return response;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    throw error;
   }
 }
 
@@ -44,33 +54,30 @@ export const onRequest: PagesFunction = async (context) => {
       const url = new URL(request.url);
       targetUrl = url.searchParams.get("url");
     } else if (request.method === "POST") {
-      const body = await request.json();
-      targetUrl = body.url;
+      const body: Record<string, unknown> = await request.json();
+      targetUrl = typeof body.url === "string" ? body.url : null;
     }
 
     if (!targetUrl) {
       return new Response(
-        JSON.stringify({ error: "Missing 'url' parameter" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ success: false, error: "Missing 'url' parameter" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    console.log(`[Sitemap Fetch] Fetching: ${targetUrl}`);
+    if (!isPublicUrl(targetUrl)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "URL must be a public HTTP/HTTPS address" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
-    const response = await fetchWithTimeout(targetUrl, 90000);
+    const response = await fetchWithTimeout(targetUrl, 90_000);
 
     if (!response.ok) {
       return new Response(
-        JSON.stringify({
-          error: `Upstream returned ${response.status}: ${response.statusText}`,
-        }),
-        {
-          status: response.status,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ success: false, error: `Upstream returned ${response.status}: ${response.statusText}` }),
+        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -86,19 +93,11 @@ export const onRequest: PagesFunction = async (context) => {
       },
     });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    const isTimeout = errorMessage.includes("abort");
-
-    console.error("[Sitemap Fetch Error]", errorMessage);
-
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const isTimeout = message.includes("abort");
     return new Response(
-      JSON.stringify({
-        error: isTimeout ? "Request timed out" : errorMessage,
-      }),
-      {
-        status: isTimeout ? 408 : 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ success: false, error: isTimeout ? "Request timed out" : message }),
+      { status: isTimeout ? 408 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 };
