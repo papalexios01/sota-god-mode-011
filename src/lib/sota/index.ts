@@ -1,57 +1,64 @@
-// SOTA Library Index - Export All Modules
+// src/lib/sota/index.ts
+// SOTA Content Engine - Enterprise Barrel Export v3.0
 
-// Types
-export * from './types';
+// Core Types
+export type {
+  GeneratedContent,
+  ContentGenerationOptions,
+  QualityScore,
+  ContentMetrics,
+  NeuronWriterAnalysis,
+} from "./types";
 
-// Core Engines
-export { SOTAContentGenerationEngine, createSOTAEngine } from './SOTAContentGenerationEngine';
-export type { ExtendedAPIKeys } from './SOTAContentGenerationEngine';
-export { EnterpriseContentOrchestrator, createOrchestrator } from './EnterpriseContentOrchestrator';
+// Internal Link Engine
+export { generateInternalLinks, applyInternalLinks } from "./SOTAInternalLinkEngine";
+export type { InternalLink, SitemapUrl } from "./SOTAInternalLinkEngine";
 
-// Services
-export { YouTubeService, createYouTubeService } from './YouTubeService';
-export { ReferenceService, createReferenceService } from './ReferenceService';
-export { SERPAnalyzer, createSERPAnalyzer } from './SERPAnalyzer';
-export { SchemaGenerator, createSchemaGenerator } from './SchemaGenerator';
-export { SOTAInternalLinkEngine, createInternalLinkEngine, type SitePage } from './SOTAInternalLinkEngine';
+// NeuronWriter Service
+export {
+  fetchNeuronWriterAnalysis,
+  buildNeuronWriterPromptSection,
+  scoreContentAgainstNeuron,
+} from "./NeuronWriterService";
+export type { NeuronWriterTermData, NeuronWriterHeadingData } from "./NeuronWriterService";
 
-// NeuronWriter Integration
-export { 
-  NeuronWriterService, 
-  createNeuronWriterService,
-  getNeuronWriterService
-} from './NeuronWriterService';
-export type { 
-  NeuronWriterProject, 
-  NeuronWriterQuery, 
-  NeuronWriterAnalysis, 
-  NeuronWriterTerm 
-} from './NeuronWriterService';
+// Content Prompt Builder
+export { buildMasterSystemPrompt, buildMasterUserPrompt } from "./prompts/masterContentPrompt";
+export type { ContentPromptConfig } from "./prompts/masterContentPrompt";
 
-// E-E-A-T Validation
-export { 
-  EEATValidator, 
-  createEEATValidator, 
-  validateEEAT 
-} from './EEATValidator';
-export type { EEATScore, EEATSignal } from './EEATValidator';
+// Content Post-Processor
+export { enhanceHtmlDesign, injectMissingTerms, addFaqSection, postProcessContent } from "./ContentPostProcessor";
 
-// Validation & Quality
-export { 
-  calculateQualityScore, 
-  analyzeContent, 
-  detectAITriggerPhrases,
-  removeAIPhrases,
-  calculateKeywordDensity 
-} from './QualityValidator';
+// Schema Generator
+export { SchemaGenerator } from "./SchemaGenerator";
 
-// Caching
-export { generationCache, serpCache, schemaCache, validationCache } from './cache';
+// EEAT Validator
+export { EEATValidator } from "./EEATValidator";
 
-// Performance Tracking
-export { 
-  globalPerformanceTracker,
-  calculateAEOScore,
-  calculateSemanticRichness,
-  calculateLinkDensity
-} from './PerformanceTracker';
+// Quality Validator
+export { QualityValidator } from "./QualityValidator";
+
+// Performance Tracker
+export { PerformanceTracker, globalPerformanceTracker } from "./PerformanceTracker";
+export type { AnalyticsDashboardData } from "./PerformanceTracker";
+
+// Reference Service
+export { ReferenceService } from "./ReferenceService";
+
+// YouTube Service
+export { YouTubeService } from "./YouTubeService";
+
+// SERP Analyzer
+export { SERPAnalyzer } from "./SERPAnalyzer";
+
+// SEO Health Scorer
+export { SEOHealthScorer } from "./SEOHealthScorer";
+
+// God Mode Engine
+export { GodModeEngine } from "./GodModeEngine";
+
+// Cache
+export { SOTACache } from "./cache";
+
+// Sanitize
+export { sanitizeContent } from "./sanitize";
