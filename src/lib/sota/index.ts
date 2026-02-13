@@ -62,3 +62,5 @@ export { SOTACache } from "./cache";
 
 // Sanitize
 export { sanitizeContent } from "./sanitize";
+
+export { createOrchestrator } from "./EnterpriseContentOrchestrator";
