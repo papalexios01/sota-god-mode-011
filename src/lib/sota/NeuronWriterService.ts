@@ -140,6 +140,58 @@ export class NeuronWriterService {
     this.apiKey = apiKey;
   }
 
+
+    // ─── Project Management ────────────────────────────────────────────
+
+  async listProjects(): Promise<{
+    success: boolean;
+    projects?: Array<{ id: string; name: string; queries_count?: number }>;
+    error?: string;
+  }> {
+    try {
+      const res = await callNeuronWriterProxy(this.apiKey, '/list-projects', {});
+
+      if (!res.success || !res.data) {
+        return { success: false, error: res.error || 'Failed to fetch projects' };
+      }
+
+      const raw = res.data;
+
+      // NeuronWriter API can return projects in various shapes
+      const rawProjects: any[] =
+        Array.isArray(raw) ? raw :
+        Array.isArray(raw?.projects) ? raw.projects :
+        Array.isArray(raw?.data) ? raw.data :
+        Array.isArray(raw?.data?.projects) ? raw.data.projects :
+        [];
+
+      const projects = rawProjects.map((p: any) => ({
+        id: String(p.id || p.project_id || p._id || ''),
+        name: String(p.name || p.project_name || p.title || `Project ${p.id || 'unknown'}`),
+        queries_count: typeof p.queries_count === 'number' ? p.queries_count :
+                       typeof p.queries === 'number' ? p.queries :
+                       typeof p.count === 'number' ? p.count :
+                       undefined,
+      })).filter((p: any) => p.id);
+
+      if (projects.length === 0 && rawProjects.length > 0) {
+        // Data exists but couldn't parse — return raw for debugging
+        console.warn('[NeuronWriter] Received project data but could not parse:', rawProjects.slice(0, 2));
+        return { success: false, error: 'Received data but could not parse project list' };
+      }
+
+      return { success: true, projects };
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      return { success: false, error: `listProjects failed: ${message}` };
+    }
+  }
+
+  // ─── Query Management ──────────────────────────────────────────────
+
+  async findQueryByKeyword(
+
+
   // ─── Query Management ──────────────────────────────────────────────
 
   async findQueryByKeyword(
