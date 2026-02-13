@@ -1,3 +1,6 @@
 name = "wp-content-optimizer-pro"
-compatibility_date = "2024-01-01"
+compatibility_date = "2024-09-23"
 pages_build_output_dir = "dist"
+
+[build]
+command = "npm install --legacy-peer-deps && npm run build"
