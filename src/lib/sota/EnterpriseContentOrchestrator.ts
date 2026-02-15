@@ -2300,7 +2300,8 @@ Output ONLY the HTML. No markdown. No commentary.`;
 
       // NeuronWriter data
       neuronWriterQueryId: neuron?.queryId,
-      neuronWriterAnalysis: neuron?.analysis,
+            neuronWriterAnalysis: neuron ? Object.assign({}, neuron.analysis, { query_id: neuron.queryId, status: 'ready' }) : undefined,
+
 
       // Post-processing audit trail
       postProcessing: postProcessingResult,
