@@ -10,6 +10,7 @@ import type {
 } from './types';
 import { generationCache } from './cache';
 
+// Model configurations with dynamic model ID support
 interface ModelConfig {
   endpoint: string;
   modelId: string;
@@ -50,6 +51,7 @@ const DEFAULT_MODEL_CONFIGS: Record<AIModel, ModelConfig> = {
   },
 };
 
+// Extended API Keys interface with custom model IDs
 export interface ExtendedAPIKeys extends APIKeys {
   openrouterModelId?: string;
   groqModelId?: string;
@@ -68,8 +70,10 @@ export class SOTAContentGenerationEngine {
     this.apiKeys = apiKeys;
     this.onProgress = onProgress;
 
+    // Build model configs with custom model IDs
     this.modelConfigs = { ...DEFAULT_MODEL_CONFIGS };
 
+    // Override OpenRouter model if provided
     if (apiKeys.openrouterModelId) {
       this.modelConfigs.openrouter = {
         ...this.modelConfigs.openrouter,
@@ -78,6 +82,7 @@ export class SOTAContentGenerationEngine {
       this.log(`OpenRouter using custom model: ${apiKeys.openrouterModelId}`);
     }
 
+    // Override Groq model if provided
     if (apiKeys.groqModelId) {
       this.modelConfigs.groq = {
         ...this.modelConfigs.groq,
@@ -129,7 +134,7 @@ export class SOTAContentGenerationEngine {
       throw new Error(`No API key configured for ${model}`);
     }
 
-    // Check cache — FIX: cache now stores GenerationResult directly, not Promise
+    // Check cache — stores GenerationResult directly (not Promise)
     const cacheKey = { prompt: prompt.slice(0, 200), model, systemPrompt: (systemPrompt || '').slice(0, 100) };
     const cached = generationCache.get<GenerationResult>(cacheKey);
     if (cached) {
@@ -184,7 +189,7 @@ export class SOTAContentGenerationEngine {
           cached: false,
         };
 
-        // FIX: Store the resolved result directly, not a Promise wrapper
+        // Cache the resolved result directly (NOT a Promise wrapper)
         generationCache.set(cacheKey, result);
 
         return result;
@@ -452,6 +457,7 @@ Synthesize into ONE perfect piece. Output ONLY the final content, no explanation
   }
 }
 
+// Factory function
 export function createSOTAEngine(
   apiKeys: APIKeys,
   onProgress?: (message: string) => void,
