@@ -94,13 +94,17 @@ const PROXY_ENDPOINTS = [
   '/api/neuronwriter',
 ];
 
+const NEURON_API_BASE = 'https://app.neuronwriter.com/neuron-api/0.5/writer';
+
 async function callNeuronWriterProxy(
   apiKey: string,
   endpoint: string,
   body?: Record<string, unknown>
 ): Promise<NWApiResponse> {
   let lastError = '';
+  const errors: string[] = [];
 
+  // Attempt 1 & 2: Try through server-side proxy endpoints
   for (const proxy of PROXY_ENDPOINTS) {
     try {
       const res = await fetch(proxy, {
@@ -112,6 +116,13 @@ async function callNeuronWriterProxy(
         body: JSON.stringify({ endpoint, apiKey, body: body || {} }),
       });
 
+      // Detect HTML responses (SPA fallback / 404 returning index.html)
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('text/html')) {
+        errors.push(`${proxy}: returned HTML (likely 404/SPA fallback)`);
+        continue;
+      }
+
       const data = await res.json();
 
       if (data && typeof data === 'object') {
@@ -119,14 +130,58 @@ async function callNeuronWriterProxy(
         return { success: res.ok, data, status: res.status };
       }
 
-      return { success: false, error: 'Invalid response format', status: res.status };
+      errors.push(`${proxy}: invalid response format`);
     } catch (e) {
       lastError = e instanceof Error ? e.message : String(e);
+      errors.push(`${proxy}: ${lastError}`);
       continue;
     }
   }
 
-  return { success: false, error: `All proxy endpoints failed: ${lastError}` };
+  // Attempt 3: Direct NeuronWriter API call (browser → NeuronWriter)
+  // This works when no server-side proxy is available
+  try {
+    const url = `${NEURON_API_BASE}${endpoint}`;
+    const fetchOptions: RequestInit = {
+      method: 'POST',
+      headers: {
+        'X-API-KEY': apiKey.trim(),
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    };
+    if (body) {
+      fetchOptions.body = JSON.stringify(body);
+    }
+
+    const directRes = await fetch(url, fetchOptions);
+    const directText = await directRes.text();
+
+    let directData: any;
+    try {
+      directData = JSON.parse(directText);
+    } catch {
+      directData = { raw: directText.substring(0, 500) };
+    }
+
+    if (directRes.ok) {
+      console.log(`[NeuronWriter] Direct API call succeeded for ${endpoint}`);
+      return { success: true, data: directData, status: directRes.status };
+    }
+
+    return {
+      success: false,
+      data: directData,
+      error: `NeuronWriter API ${directRes.status}: ${directData?.message || directData?.error || 'Unknown error'}`,
+      status: directRes.status,
+    };
+  } catch (directErr) {
+    const directMsg = directErr instanceof Error ? directErr.message : String(directErr);
+    errors.push(`direct API: ${directMsg}`);
+  }
+
+  console.error('[NeuronWriter] All connection methods failed:', errors.join(' | '));
+  return { success: false, error: `All NeuronWriter connection methods failed: ${errors.join(' | ')}` };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

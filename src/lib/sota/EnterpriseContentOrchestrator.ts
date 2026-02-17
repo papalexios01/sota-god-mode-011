@@ -637,7 +637,7 @@ Now continue:`;
     const projectId = this.config.neuronWriterProjectId?.trim();
 
     if (!apiKey || !projectId) {
-      this.log('NeuronWriter: SKIPPED — API key or Project ID not configured');
+      this.log(`NeuronWriter: SKIPPED — API key: ${apiKey ? 'present (' + apiKey.length + ' chars)' : 'MISSING'}, Project ID: ${projectId ? 'present' : 'MISSING'}`);
       return null;
     }
 
@@ -1940,7 +1940,11 @@ Write the complete article now. Output ONLY HTML.`;
       if (results[0].status === 'rejected') this.warn(`SERP analysis failed (using defaults): ${results[0].reason}`);
       if (results[1].status === 'rejected') this.warn(`YouTube fetch failed: ${results[1].reason}`);
       if (results[2].status === 'rejected') this.warn(`References fetch failed: ${results[2].reason}`);
-      if (results[3].status === 'rejected') this.warn(`NeuronWriter init failed: ${results[3].reason}`);
+      if (results[3].status === 'rejected') {
+        this.warn(`NeuronWriter init failed (rejected): ${results[3].reason}`);
+      } else if (results[3].status === 'fulfilled' && !results[3].value) {
+        this.warn('NeuronWriter init returned null — all proxy endpoints and direct API call failed');
+      }
     } catch (e) {
       this.logError(`Phase 1 failed entirely (using defaults): ${e}`);
       serpAnalysis = this.getDefaultSerpAnalysis(options.keyword);
