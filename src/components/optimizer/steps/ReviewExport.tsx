@@ -388,13 +388,15 @@ export function ReviewExport() {
       sitePages,
       primaryModel: config.primaryModel,
       useConsensus: false,
-      // NeuronWriter integration
-      neuronWriterApiKey: config.enableNeuronWriter ? config.neuronWriterApiKey : undefined,
-      neuronWriterProjectId: config.enableNeuronWriter ? config.neuronWriterProjectId : undefined,
+      // NeuronWriter integration - FAILSAFE: Use key if present even if flag is flaky
+      neuronWriterApiKey: (config.enableNeuronWriter || (config.neuronWriterApiKey && config.neuronWriterApiKey.length > 10)) ? config.neuronWriterApiKey : undefined,
+      neuronWriterProjectId: (config.enableNeuronWriter || (config.neuronWriterApiKey && config.neuronWriterApiKey.length > 10)) ? config.neuronWriterProjectId : undefined,
     });
 
-    if (config.enableNeuronWriter && config.neuronWriterApiKey) {
-      console.log(`[ReviewExport] NeuronWriter enabled with project: ${config.neuronWriterProjectName}`);
+    if (config.enableNeuronWriter || (config.neuronWriterApiKey && config.neuronWriterApiKey.length > 10)) {
+      console.log(`[ReviewExport] NeuronWriter ACTIVATED with project: ${config.neuronWriterProjectName || config.neuronWriterProjectId} (Flag: ${config.enableNeuronWriter}, Key Present: ${!!config.neuronWriterApiKey})`);
+    } else {
+      console.warn('[ReviewExport] NeuronWriter SKIPPED - No API Key found or explicitly disabled');
     }
 
     let completed = 0;
