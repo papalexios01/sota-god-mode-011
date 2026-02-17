@@ -1,7 +1,7 @@
 // CONTENT INTELLIGENCE DASHBOARD - Analytics & Metrics UI
 
 import { useState, useEffect } from 'react';
-import { 
+import {
   BarChart3, TrendingUp, TrendingDown, Minus,
   Zap, Clock, Target, FileText, Link, Brain,
   RefreshCw, Trash2, Download
@@ -132,15 +132,15 @@ export function ContentIntelligenceDashboard({ onRefresh }: ContentIntelligenceD
       </div>
 
       {/* Performance Trend */}
-      <div className="bg-card border border-border rounded-xl p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-foreground">Performance Trend</h3>
-          <span className={cn('flex items-center gap-1 text-sm font-medium', trendColor)}>
+      <div className="glass-card border border-white/10 rounded-2xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="font-bold text-white">Performance Trend</h3>
+          <span className={cn('flex items-center gap-1.5 text-sm font-bold px-3 py-1 rounded-full bg-white/5 border border-white/10', trendColor)}>
             <TrendIcon className="w-4 h-4" />
             {trend.charAt(0).toUpperCase() + trend.slice(1)}
           </span>
         </div>
-        
+
         {data.qualityTrend.length > 0 ? (
           <div className="h-40 flex items-end gap-1">
             {data.qualityTrend.map((point, index) => (
@@ -166,12 +166,12 @@ export function ContentIntelligenceDashboard({ onRefresh }: ContentIntelligenceD
       {/* Two Column Layout */}
       <div className="grid md:grid-cols-2 gap-4">
         {/* Model Usage */}
-        <div className="bg-card border border-border rounded-xl p-4">
-          <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+        <div className="glass-card border border-white/10 rounded-2xl p-6">
+          <h3 className="font-bold text-white mb-6 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-primary" />
             AI Model Usage
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {Object.entries(data.modelUsage)
               .filter(([_, count]) => count > 0)
               .sort((a, b) => b[1] - a[1])
@@ -179,14 +179,14 @@ export function ContentIntelligenceDashboard({ onRefresh }: ContentIntelligenceD
                 const total = Object.values(data.modelUsage).reduce((a, b) => a + b, 0);
                 const percentage = total > 0 ? (count / total) * 100 : 0;
                 return (
-                  <div key={model} className="space-y-1">
+                  <div key={model} className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-foreground capitalize">{model}</span>
-                      <span className="text-muted-foreground">{count} ({percentage.toFixed(0)}%)</span>
+                      <span className="text-zinc-200 capitalize font-medium">{model}</span>
+                      <span className="text-zinc-400">{count} ({percentage.toFixed(0)}%)</span>
                     </div>
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div className="h-2.5 bg-white/10 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-primary rounded-full transition-all"
+                        className="h-full bg-gradient-to-r from-primary to-emerald-400 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
@@ -194,7 +194,7 @@ export function ContentIntelligenceDashboard({ onRefresh }: ContentIntelligenceD
                 );
               })}
             {Object.values(data.modelUsage).every(v => v === 0) && (
-              <p className="text-sm text-muted-foreground text-center py-4">
+              <p className="text-sm text-zinc-500 text-center py-4">
                 No model usage data yet
               </p>
             )}
@@ -202,26 +202,26 @@ export function ContentIntelligenceDashboard({ onRefresh }: ContentIntelligenceD
         </div>
 
         {/* Top Keywords */}
-        <div className="bg-card border border-border rounded-xl p-4">
-          <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+        <div className="glass-card border border-white/10 rounded-2xl p-6">
+          <h3 className="font-bold text-white mb-6 flex items-center gap-2">
             <Target className="w-5 h-5 text-primary" />
             Top Keywords
           </h3>
           {data.topKeywords.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {data.topKeywords.slice(0, 8).map((item, index) => (
-                <div key={index} className="flex items-center justify-between text-sm">
-                  <span className="text-foreground truncate flex-1 mr-2">
+                <div key={index} className="flex items-center justify-between text-sm group">
+                  <span className="text-zinc-300 truncate flex-1 mr-4 font-medium group-hover:text-primary transition-colors">
                     {item.keyword}
                   </span>
-                  <span className="text-muted-foreground bg-muted px-2 py-0.5 rounded text-xs">
+                  <span className="text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-lg text-xs font-bold shadow-[0_0_10px_rgba(16,185,129,0.1)]">
                     {item.count}x
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">
+            <p className="text-sm text-zinc-500 text-center py-4">
               No keywords generated yet
             </p>
           )}
@@ -253,13 +253,13 @@ export function ContentIntelligenceDashboard({ onRefresh }: ContentIntelligenceD
   );
 }
 
-function StatCard({ 
-  icon: Icon, 
-  label, 
-  value, 
-  subtext, 
-  highlight = false 
-}: { 
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  subtext,
+  highlight = false
+}: {
   icon: React.ElementType;
   label: string;
   value: string;
@@ -268,39 +268,41 @@ function StatCard({
 }) {
   return (
     <div className={cn(
-      "bg-card border rounded-xl p-4 transition-all",
-      highlight ? "border-primary/50 bg-primary/5" : "border-border"
+      "glass-card border rounded-2xl p-5 transition-all duration-300 group hover:translate-y-[-2px] hover:shadow-lg",
+      highlight ? "border-primary/50 bg-primary/10 shadow-[0_0_20px_rgba(16,185,129,0.1)]" : "border-white/10"
     )}>
-      <div className="flex items-center gap-2 mb-2">
-        <Icon className={cn("w-4 h-4", highlight ? "text-primary" : "text-muted-foreground")} />
-        <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-2.5 mb-2">
+        <div className={cn("p-1.5 rounded-lg", highlight ? "bg-primary/20" : "bg-white/5")}>
+          <Icon className={cn("w-4 h-4", highlight ? "text-primary" : "text-zinc-400 group-hover:text-white")} />
+        </div>
+        <span className="text-xs font-medium text-zinc-400 group-hover:text-zinc-300">{label}</span>
       </div>
-      <div className={cn("text-2xl font-bold", highlight ? "text-primary" : "text-foreground")}>
+      <div className={cn("text-2xl font-bold tracking-tight", highlight ? "text-primary text-glow" : "text-white")}>
         {value}
       </div>
-      <div className="text-xs text-muted-foreground">{subtext}</div>
+      <div className={cn("text-xs mt-1", highlight ? "text-primary/70" : "text-zinc-500")}>{subtext}</div>
     </div>
   );
 }
 
-function QuickStat({ 
-  label, 
-  value, 
-  target, 
-  good 
-}: { 
-  label: string; 
-  value: string; 
-  target: string; 
+function QuickStat({
+  label,
+  value,
+  target,
+  good
+}: {
+  label: string;
+  value: string;
+  target: string;
   good: boolean;
 }) {
   return (
-    <div className="bg-muted/30 rounded-lg p-3 text-center">
-      <div className="text-xs text-muted-foreground mb-1">{label}</div>
-      <div className={cn("text-lg font-bold", good ? "text-green-400" : "text-yellow-400")}>
+    <div className="glass-card rounded-xl p-4 text-center border border-white/5 hover:bg-white/5 transition-colors">
+      <div className="text-xs font-medium text-zinc-400 mb-1">{label}</div>
+      <div className={cn("text-xl font-bold", good ? "text-emerald-400 text-glow" : "text-yellow-400")}>
         {value}
       </div>
-      <div className="text-xs text-muted-foreground">Target: {target}</div>
+      <div className="text-[10px] text-zinc-600 uppercase tracking-widest mt-1">Target: {target}</div>
     </div>
   );
 }

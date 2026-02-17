@@ -4,7 +4,7 @@ import { createNeuronWriterService } from "@/lib/sota/NeuronWriterService";
 import {
   Key, Globe, User, Building, Image, UserCircle,
   Sparkles, MapPin, Check, AlertCircle, ExternalLink, Database,
-  Settings, Loader2, FolderOpen, RefreshCw, XCircle
+  Settings, Loader2, FolderOpen, RefreshCw, XCircle, Bot, Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getSupabaseConfig, saveSupabaseConfig, clearSupabaseConfig, validateSupabaseConfig } from "@/lib/supabaseClient";
@@ -218,25 +218,29 @@ export function SetupConfig() {
       </div>
 
       {/* API Keys Section */}
-      <section className="bg-card border border-border rounded-2xl p-6">
-        <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-          <Key className="w-5 h-5 text-primary" />
+      <section className="glass-card rounded-2xl p-8 hover:shadow-lg transition-all duration-300 group">
+        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+            <Key className="w-5 h-5 text-primary" />
+          </div>
           API Keys
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <InputField label="Google Gemini API Key" value={config.geminiApiKey} onChange={(v) => setConfig({ geminiApiKey: v })} type="password" placeholder="AIza..." />
-          <InputField label="Serper API Key (Required for SOTA Research)" value={config.serperApiKey} onChange={(v) => setConfig({ serperApiKey: v })} type="password" placeholder="Enter Serper key..." required />
-          <InputField label="OpenAI API Key" value={config.openaiApiKey} onChange={(v) => setConfig({ openaiApiKey: v })} type="password" placeholder="sk-..." />
-          <InputField label="Anthropic API Key" value={config.anthropicApiKey} onChange={(v) => setConfig({ anthropicApiKey: v })} type="password" placeholder="sk-ant-..." />
-          <InputField label="OpenRouter API Key" value={config.openrouterApiKey} onChange={(v) => setConfig({ openrouterApiKey: v })} type="password" placeholder="sk-or-..." />
-          <InputField label="Groq API Key" value={config.groqApiKey} onChange={(v) => setConfig({ groqApiKey: v })} type="password" placeholder="gsk_..." />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <InputField label="Google Gemini API Key" value={config.geminiApiKey} onChange={(v) => setConfig({ geminiApiKey: v })} type="password" placeholder="AIza..." icon={<Key className="w-4 h-4" />} />
+          <InputField label="Serper API Key (Required for SOTA Research)" value={config.serperApiKey} onChange={(v) => setConfig({ serperApiKey: v })} type="password" placeholder="Enter Serper key..." required icon={<Globe className="w-4 h-4" />} />
+          <InputField label="OpenAI API Key" value={config.openaiApiKey} onChange={(v) => setConfig({ openaiApiKey: v })} type="password" placeholder="sk-..." icon={<Bot className="w-4 h-4" />} />
+          <InputField label="Anthropic API Key" value={config.anthropicApiKey} onChange={(v) => setConfig({ anthropicApiKey: v })} type="password" placeholder="sk-ant-..." icon={<Bot className="w-4 h-4" />} />
+          <InputField label="OpenRouter API Key" value={config.openrouterApiKey} onChange={(v) => setConfig({ openrouterApiKey: v })} type="password" placeholder="sk-or-..." icon={<Bot className="w-4 h-4" />} />
+          <InputField label="Groq API Key" value={config.groqApiKey} onChange={(v) => setConfig({ groqApiKey: v })} type="password" placeholder="gsk_..." icon={<Zap className="w-4 h-4" />} />
         </div>
       </section>
 
       {/* Model Configuration */}
-      <section className="bg-card border border-border rounded-2xl p-6">
-        <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-primary" />
+      <section className="glass-card rounded-2xl p-8 hover:shadow-lg transition-all duration-300 group">
+        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+            <Sparkles className="w-5 h-5 text-purple-400" />
+          </div>
           AI Model Configuration
         </h2>
         <div className="space-y-6">
@@ -349,7 +353,7 @@ export function SetupConfig() {
         <div className="mt-4 text-xs text-muted-foreground">
           <div className="font-medium text-foreground mb-1">Database schema (recommended)</div>
           <pre className="whitespace-pre-wrap rounded-xl border border-border/50 bg-background/20 p-3 overflow-auto">
-{`create table if not exists generated_blog_posts (
+            {`create table if not exists generated_blog_posts (
   id text primary key,
   item_id text not null unique,
   title text not null,
@@ -554,9 +558,9 @@ function InputField({
         {label}
         {required && <span className="text-red-400 ml-1">*</span>}
       </label>
-      <div className="relative">
+      <div className="relative group">
         {icon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{icon}</div>
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-hover:text-primary transition-colors duration-300 z-10">{icon}</div>
         )}
         <input
           type={type}
@@ -564,7 +568,7 @@ function InputField({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           className={cn(
-            "w-full px-4 py-2.5 bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50",
+            "w-full px-4 py-3 bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-300 shadow-inner group-hover:bg-black/30",
             icon && "pl-10"
           )}
         />

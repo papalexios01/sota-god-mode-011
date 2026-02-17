@@ -1,9 +1,9 @@
 // ENHANCED GENERATION MODAL - SOTA Progress Tracking
 
 import { useState, useEffect, useRef } from 'react';
-import { 
-  Loader2, Check, AlertCircle, Sparkles, X, 
-  Brain, Search, Youtube, BookOpen, FileText, 
+import {
+  Loader2, Check, AlertCircle, Sparkles, X,
+  Brain, Search, Youtube, BookOpen, FileText,
   Link2, Shield, Zap, Target, Clock, TrendingUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -39,65 +39,65 @@ interface EnhancedGenerationModalProps {
 }
 
 const DEFAULT_STEPS: GenerationStep[] = [
-  { 
-    id: 'research', 
-    label: 'SERP Analysis', 
+  {
+    id: 'research',
+    label: 'SERP Analysis',
     description: 'Analyzing top-ranking content',
     status: 'pending',
     icon: <Search className="w-4 h-4" />
   },
-  { 
-    id: 'videos', 
-    label: 'YouTube Discovery', 
+  {
+    id: 'videos',
+    label: 'YouTube Discovery',
     description: 'Finding relevant video content',
     status: 'pending',
     icon: <Youtube className="w-4 h-4" />
   },
-  { 
-    id: 'references', 
-    label: 'Reference Gathering', 
+  {
+    id: 'references',
+    label: 'Reference Gathering',
     description: 'Collecting authoritative sources',
     status: 'pending',
     icon: <BookOpen className="w-4 h-4" />
   },
-  { 
-    id: 'outline', 
-    label: 'Content Outline', 
+  {
+    id: 'outline',
+    label: 'Content Outline',
     description: 'Structuring the article',
     status: 'pending',
     icon: <FileText className="w-4 h-4" />
   },
-  { 
-    id: 'content', 
-    label: 'AI Generation', 
+  {
+    id: 'content',
+    label: 'AI Generation',
     description: 'Creating comprehensive content',
     status: 'pending',
     icon: <Brain className="w-4 h-4" />
   },
-  { 
-    id: 'enhance', 
-    label: 'Content Enhancement', 
+  {
+    id: 'enhance',
+    label: 'Content Enhancement',
     description: 'Optimizing for readability',
     status: 'pending',
     icon: <Sparkles className="w-4 h-4" />
   },
-  { 
-    id: 'links', 
-    label: 'Internal Linking', 
+  {
+    id: 'links',
+    label: 'Internal Linking',
     description: 'Adding strategic links',
     status: 'pending',
     icon: <Link2 className="w-4 h-4" />
   },
-  { 
-    id: 'validate', 
-    label: 'Quality Validation', 
+  {
+    id: 'validate',
+    label: 'Quality Validation',
     description: 'Ensuring content standards',
     status: 'pending',
     icon: <Target className="w-4 h-4" />
   },
-  { 
-    id: 'schema', 
-    label: 'Schema Generation', 
+  {
+    id: 'schema',
+    label: 'Schema Generation',
     description: 'Creating structured data',
     status: 'pending',
     icon: <Shield className="w-4 h-4" />
@@ -172,32 +172,35 @@ export function EnhancedGenerationModal({
   const estimatedRemaining = Math.round(avgTimePerItem * remainingItems);
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="bg-card border border-border rounded-2xl w-full max-w-2xl shadow-2xl shadow-primary/10">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+      <div className="glass-card border border-white/10 rounded-3xl w-full max-w-2xl shadow-2xl relative overflow-hidden">
+        {/* Ambient Glow */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl -z-10 -translate-x-1/2 translate-y-1/2" />
         {/* Header */}
-        <div className="p-6 border-b border-border">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
+        <div className="p-8 border-b border-white/10">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-5">
               <div className={cn(
-                "w-14 h-14 rounded-2xl flex items-center justify-center relative",
-                hasError ? "bg-destructive/20" : isComplete ? "bg-green-500/20" : "bg-primary/20"
+                "w-16 h-16 rounded-2xl flex items-center justify-center relative shadow-lg",
+                hasError ? "bg-red-500/20 border border-red-500/30" : isComplete ? "bg-emerald-500/20 border border-emerald-500/30" : "bg-primary/20 border border-primary/30"
               )}>
                 {hasError ? (
-                  <AlertCircle className="w-7 h-7 text-destructive" />
+                  <AlertCircle className="w-8 h-8 text-red-400" />
                 ) : isComplete ? (
-                  <Check className="w-7 h-7 text-green-400" />
+                  <Check className="w-8 h-8 text-emerald-400" />
                 ) : (
                   <>
-                    <Brain className="w-7 h-7 text-primary" />
-                    <div className="absolute inset-0 rounded-2xl border-2 border-primary/50 animate-pulse" />
+                    <Brain className="w-8 h-8 text-primary animate-pulse" />
+                    <div className="absolute inset-0 rounded-2xl border-2 border-primary/50 animate-ping opacity-20" />
                   </>
                 )}
               </div>
               <div>
-                <h2 className="text-xl font-bold text-foreground">
-                  {hasError ? 'Generation Error' : isComplete ? 'Generation Complete!' : 'Generating Content'}
+                <h2 className="text-2xl font-bold text-white mb-1">
+                  {hasError ? 'Generation Error' : isComplete ? 'Mission Complete!' : 'Forging Content'}
                 </h2>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-zinc-400 font-medium">
                   {completedItems} of {totalItems} articles • {formatTime(elapsedTime)} elapsed
                 </p>
               </div>
@@ -205,9 +208,9 @@ export function EnhancedGenerationModal({
             {(isComplete || hasError) && (
               <button
                 onClick={onClose}
-                className="p-2.5 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted/50 transition-all"
+                className="p-3 text-zinc-400 hover:text-white rounded-xl hover:bg-white/10 transition-all hover:rotate-90 duration-300"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             )}
           </div>
@@ -222,7 +225,7 @@ export function EnhancedGenerationModal({
               <span className="text-2xl font-bold text-primary">{overallProgress}%</span>
             </div>
             <div className="h-3 bg-muted rounded-full overflow-hidden relative">
-              <div 
+              <div
                 className={cn(
                   "h-full rounded-full transition-all duration-500 ease-out relative overflow-hidden",
                   hasError ? "bg-destructive" : "bg-gradient-to-r from-primary to-green-500"
@@ -237,8 +240,8 @@ export function EnhancedGenerationModal({
             <div className="flex justify-between text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
-                {completedItems > 0 && remainingItems > 0 
-                  ? `~${formatTime(estimatedRemaining)} remaining` 
+                {completedItems > 0 && remainingItems > 0
+                  ? `~${formatTime(estimatedRemaining)} remaining`
                   : 'Calculating...'}
               </span>
               <span>
@@ -250,34 +253,37 @@ export function EnhancedGenerationModal({
 
         {/* Current Item */}
         {currentItem && (
-          <div className="p-4 border-b border-border bg-primary/5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+          <div className="p-6 border-b border-white/10 bg-white/5 backdrop-blur-sm">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center shadow-inner">
                 {currentItem.status === 'generating' ? (
-                  <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                  <Loader2 className="w-6 h-6 text-primary animate-spin" />
                 ) : currentItem.status === 'completed' ? (
-                  <Check className="w-5 h-5 text-green-400" />
+                  <Check className="w-6 h-6 text-emerald-400" />
                 ) : currentItem.status === 'error' ? (
-                  <X className="w-5 h-5 text-destructive" />
+                  <X className="w-6 h-6 text-red-400" />
                 ) : (
-                  <Clock className="w-5 h-5 text-muted-foreground" />
+                  <Clock className="w-6 h-6 text-zinc-500" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-foreground truncate">{currentItem.title}</div>
-                <div className="text-sm text-muted-foreground truncate">{currentItem.keyword}</div>
+                <div className="font-bold text-white text-lg truncate mb-1">{currentItem.title}</div>
+                <div className="text-sm text-zinc-400 truncate flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/50"></span>
+                  {currentItem.keyword}
+                </div>
               </div>
               <div className="text-right">
-                <div className="text-lg font-bold text-primary">{currentItem.progress}%</div>
+                <div className="text-2xl font-bold text-primary text-glow">{currentItem.progress}%</div>
                 {currentStep && (
-                  <div className="text-xs text-muted-foreground">{currentStep.label}</div>
+                  <div className="text-xs text-zinc-400 font-medium uppercase tracking-wider">{currentStep.label}</div>
                 )}
               </div>
             </div>
             {/* Item Progress */}
-            <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary rounded-full transition-all duration-300"
+            <div className="mt-5 h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
+              <div
+                className="h-full bg-gradient-to-r from-primary to-emerald-400 rounded-full transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.5)]"
                 style={{ width: `${currentItem.progress}%` }}
               />
             </div>
@@ -285,55 +291,49 @@ export function EnhancedGenerationModal({
         )}
 
         {/* Steps */}
-        <div className="p-4 max-h-[300px] overflow-y-auto">
-          <div className="grid grid-cols-3 gap-2">
+        <div className="p-6 max-h-[300px] overflow-y-auto custom-scrollbar">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {steps.map((step) => (
-              <div 
+              <div
                 key={step.id}
                 className={cn(
-                  "p-3 rounded-xl transition-all border",
-                  step.status === 'running' && "bg-primary/10 border-primary/50 shadow-lg shadow-primary/10",
-                  step.status === 'completed' && "bg-green-500/10 border-green-500/30",
-                  step.status === 'error' && "bg-destructive/10 border-destructive/30",
-                  step.status === 'pending' && "bg-muted/30 border-border/50",
-                  step.status === 'skipped' && "bg-muted/20 border-border/30 opacity-50"
+                  "p-4 rounded-xl transition-all border flex items-center gap-4 group",
+                  step.status === 'running' && "bg-primary/10 border-primary/50 shadow-[0_0_20px_rgba(16,185,129,0.15)] scale-[1.02]",
+                  step.status === 'completed' && "bg-emerald-500/5 border-emerald-500/20",
+                  step.status === 'error' && "bg-red-500/5 border-red-500/20",
+                  step.status === 'pending' && "bg-white/5 border-white/5 hover:bg-white/10",
+                  step.status === 'skipped' && "bg-white/5 border-white/5 opacity-40"
                 )}
               >
-                <div className="flex items-center gap-2 mb-1">
+                <div className={cn(
+                  "w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors shadow-inner",
+                  step.status === 'pending' && "bg-black/20 text-zinc-500",
+                  step.status === 'running' && "bg-primary text-white shadow-[0_0_10px_rgba(16,185,129,0.3)]",
+                  step.status === 'completed' && "bg-emerald-500/20 text-emerald-400",
+                  step.status === 'error' && "bg-red-500/20 text-red-400",
+                  step.status === 'skipped' && "bg-black/20 text-zinc-600"
+                )}>
+                  {step.status === 'running' ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : step.status === 'completed' ? (
+                    <Check className="w-5 h-5" />
+                  ) : step.status === 'error' ? (
+                    <X className="w-5 h-5" />
+                  ) : (
+                    step.icon
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
                   <div className={cn(
-                    "w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0",
-                    step.status === 'pending' && "bg-muted text-muted-foreground",
-                    step.status === 'running' && "bg-primary text-primary-foreground",
-                    step.status === 'completed' && "bg-green-500 text-white",
-                    step.status === 'error' && "bg-destructive text-white",
-                    step.status === 'skipped' && "bg-muted text-muted-foreground"
-                  )}>
-                    {step.status === 'running' ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : step.status === 'completed' ? (
-                      <Check className="w-3.5 h-3.5" />
-                    ) : step.status === 'error' ? (
-                      <X className="w-3.5 h-3.5" />
-                    ) : (
-                      step.icon
-                    )}
-                  </div>
-                  <span className={cn(
-                    "text-xs font-medium truncate",
-                    step.status === 'running' && "text-primary",
-                    step.status === 'completed' && "text-green-400",
-                    step.status === 'error' && "text-destructive",
-                    step.status === 'pending' && "text-muted-foreground",
-                    step.status === 'skipped' && "text-muted-foreground"
+                    "font-bold text-sm mb-0.5",
+                    step.status === 'running' ? "text-white" : "text-zinc-300"
                   )}>
                     {step.label}
-                  </span>
-                </div>
-                {step.message && (
-                  <div className="text-xs text-muted-foreground truncate pl-8">
-                    {step.message}
                   </div>
-                )}
+                  <div className="text-xs text-zinc-500 truncate">
+                    {step.message || step.description}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -378,29 +378,29 @@ export function EnhancedGenerationModal({
         )}
 
         {/* Footer */}
-        <div className="p-4 border-t border-border bg-muted/20">
+        <div className="p-6 border-t border-white/10 bg-black/20 backdrop-blur-md">
           {isComplete ? (
             <button
               onClick={onClose}
-              className="w-full px-6 py-3.5 bg-gradient-to-r from-primary to-green-500 text-primary-foreground font-bold rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+              className="w-full px-6 py-4 bg-gradient-to-r from-primary to-emerald-500 text-white font-bold text-lg rounded-2xl hover:brightness-110 transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(16,185,129,0.3)] hover:shadow-[0_0_50px_rgba(16,185,129,0.4)] hover:-translate-y-1"
             >
-              <Sparkles className="w-5 h-5" />
+              <Sparkles className="w-6 h-6 fill-current" />
               View Generated Content
             </button>
           ) : hasError ? (
             <button
               onClick={onClose}
-              className="w-full px-6 py-3.5 bg-muted text-foreground font-semibold rounded-xl hover:bg-muted/80 transition-all"
+              className="w-full px-6 py-4 bg-white/10 text-white font-bold text-lg rounded-2xl hover:bg-white/20 transition-all border border-white/10"
             >
-              Close
+              Close and Review Errors
             </button>
           ) : (
-            <div className="flex items-center justify-center gap-3 text-muted-foreground">
+            <div className="flex items-center justify-center gap-4 text-zinc-400">
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
-              <span className="text-sm">
-                {currentStep 
-                  ? `${currentStep.label}: ${currentStep.description}...` 
-                  : 'Initializing generation pipeline...'}
+              <span className="text-sm font-medium">
+                {currentStep
+                  ? `${currentStep.label}: ${currentStep.description}...`
+                  : 'Initializing neural generation pipeline...'}
               </span>
             </div>
           )}

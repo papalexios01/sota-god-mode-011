@@ -66,9 +66,9 @@ export interface NeuronWriterDataStore {
     status: string;
     terms: Array<{ term: string; weight: number; frequency: number; type: string; usage_pc?: number; sugg_usage?: [number, number] }>;
     termsExtended?: Array<{ term: string; weight: number; frequency: number; type: string }>;
-    entities?: Array<{ entity: string; type?: string; usage_pc: number }>;
-    headingsH2?: Array<{ text: string; level: string; usage_pc: number }>;
-    headingsH3?: Array<{ text: string; level: string; usage_pc: number }>;
+    entities?: Array<{ entity: string; type?: string; usage_pc?: number }>;
+    headingsH2?: Array<{ text: string; level: string; usage_pc?: number }>;
+    headingsH3?: Array<{ text: string; level: string; usage_pc?: number }>;
     recommended_length: number;
     content_score?: number;
   };

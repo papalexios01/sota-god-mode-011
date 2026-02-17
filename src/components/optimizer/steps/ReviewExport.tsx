@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from "react";
 import { useOptimizerStore, type ContentItem, type GeneratedContentStore, type NeuronWriterDataStore } from "@/lib/store";
 import {
   FileText, Check, X, AlertCircle, Trash2,
-  Sparkles, ArrowUpDown, Eye, Brain,
+  Sparkles, ArrowUpDown, Eye, Brain, ArrowRight,
   CheckCircle, Clock, XCircle, Loader2, Database, Upload
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -96,7 +96,6 @@ function reconstructNeuronData(stored: NeuronWriterDataStore[string] | undefined
     headingsH3: stored.headingsH3?.map(h => ({ text: h.text, level: 'h3' as const, usage_pc: h.usage_pc })) || [],
     recommended_length: stored.recommended_length,
     content_score: stored.content_score,
-    competitors: [],
   };
 }
 
@@ -467,9 +466,9 @@ export function ReviewExport() {
             status: result.neuronWriterAnalysis.status,
             terms: result.neuronWriterAnalysis.terms || [],
             termsExtended: result.neuronWriterAnalysis.termsExtended,
-            entities: result.neuronWriterAnalysis.entities,
-            headingsH2: result.neuronWriterAnalysis.headingsH2,
-            headingsH3: result.neuronWriterAnalysis.headingsH3,
+            entities: result.neuronWriterAnalysis.entities as any,
+            headingsH2: result.neuronWriterAnalysis.headingsH2 as any,
+            headingsH3: result.neuronWriterAnalysis.headingsH3 as any,
             recommended_length: result.neuronWriterAnalysis.recommended_length,
             content_score: result.neuronWriterAnalysis.content_score,
           });
@@ -627,52 +626,53 @@ export function ReviewExport() {
       )}
 
       {tableMissing && (
-        <div className="flex items-start gap-3 px-4 py-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
-          <Database className="w-5 h-5 flex-shrink-0 mt-0.5" />
+        <div className="glass-card border border-red-500/30 bg-red-500/10 p-5 rounded-2xl flex items-start gap-4 animate-in fade-in slide-in-from-top-2">
+          <div className="p-2 bg-red-500/20 rounded-lg">
+            <Database className="w-6 h-6 text-red-400" />
+          </div>
           <div>
-            <p className="font-semibold mb-2">Database Table Missing</p>
-            <p className="mb-2">Your generated blog posts cannot be saved to Supabase. To enable persistence:</p>
-            <ol className="list-decimal list-inside space-y-1 text-red-300">
-              <li>Open your Supabase Dashboard</li>
-              <li>Go to SQL Editor</li>
-              <li>Run the migration from: <code className="bg-red-500/20 px-1.5 py-0.5 rounded">supabase/migrations/001_create_blog_posts_table.sql</code></li>
-              <li>Refresh this page</li>
-            </ol>
+            <h3 className="font-bold text-red-400 text-lg mb-1">Database Schema Missing</h3>
+            <p className="text-red-300/80 mb-3 text-sm">Your generated content cannot be saved to the database. Run the migration to enable persistence.</p>
+            <div className="bg-black/30 rounded-lg p-3 border border-red-500/20 font-mono text-xs text-red-300">
+              supabase/migrations/001_create_blog_posts_table.sql
+            </div>
           </div>
         </div>
       )}
 
       {/* Action Bar */}
       <div className="flex items-center justify-between">
-        <div className="flex gap-3">
+        <div className="flex gap-4">
           <button
             onClick={handleGenerate}
             disabled={selectedItems.length === 0 || !hasAiProvider || isGenerating}
-            className="px-6 py-2.5 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+            className="px-8 py-4 bg-gradient-to-r from-primary to-emerald-500 text-white font-bold text-lg rounded-2xl hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:-translate-y-1 transition-all duration-300"
           >
-            {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-            {isGenerating ? 'Generating...' : `✨ Generate Selected (${selectedItems.length})`}
+            {isGenerating ? <Loader2 className="w-6 h-6 animate-spin" /> : <Sparkles className="w-6 h-6 fill-current" />}
+            {isGenerating ? 'Forging Content...' : `Generate Selected (${selectedItems.length})`}
           </button>
+
           {(publishableSelected.length > 0 || allPublishable.length > 0) && (
             <button
               onClick={() => setShowBulkPublishModal(true)}
               disabled={isBulkPublishing}
-              className="px-5 py-2.5 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 disabled:opacity-50 flex items-center gap-2 transition-all shadow-lg shadow-green-600/20"
+              className="px-6 py-4 bg-white/5 border border-white/10 text-white font-bold rounded-2xl hover:bg-white/10 disabled:opacity-50 flex items-center gap-3 transition-all hover:-translate-y-1"
             >
               {isBulkPublishing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
               {isBulkPublishing ? 'Publishing...' : publishableSelected.length > 0
-                ? `🚀 Bulk Publish Selected (${publishableSelected.length})`
-                : `🚀 Bulk Publish All (${allPublishable.length})`
+                ? `Bulk Publish (${publishableSelected.length})`
+                : `Bulk Publish All`
               }
             </button>
           )}
+
           <button
             onClick={() => setShowAnalytics(!showAnalytics)}
             className={cn(
-              "px-4 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-colors",
+              "px-5 py-4 rounded-2xl font-bold flex items-center gap-2 transition-all border",
               showAnalytics
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-foreground hover:bg-muted/80"
+                ? "bg-primary/20 border-primary/50 text-primary shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+                : "bg-white/5 border-white/10 text-zinc-400 hover:text-white hover:bg-white/10"
             )}
           >
             <Brain className="w-5 h-5" />
@@ -681,31 +681,38 @@ export function ReviewExport() {
         </div>
 
         {/* Stats */}
-        <div className="flex gap-6 text-sm">
+        <div className="flex gap-8 text-sm bg-black/20 backdrop-blur-sm p-2 px-6 rounded-2xl border border-white/5">
           <div className="text-center">
-            <div className="text-2xl font-bold text-foreground">{stats.total}</div>
-            <div className="text-muted-foreground">Total Items</div>
+            <div className="text-2xl font-bold text-white">{stats.total}</div>
+            <div className="text-zinc-500 text-xs font-medium uppercase tracking-wider">Total</div>
           </div>
+          <div className="w-px bg-white/10 my-2" />
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-400">{stats.completed}</div>
-            <div className="text-muted-foreground">Completed</div>
+            <div className="text-2xl font-bold text-emerald-400 text-glow">{stats.completed}</div>
+            <div className="text-zinc-500 text-xs font-medium uppercase tracking-wider">Done</div>
           </div>
+          <div className="w-px bg-white/10 my-2" />
           <div className="text-center">
             <div className="text-2xl font-bold text-yellow-400">{stats.pending}</div>
-            <div className="text-muted-foreground">Pending</div>
+            <div className="text-zinc-500 text-xs font-medium uppercase tracking-wider">Queued</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-red-400">{stats.errors}</div>
-            <div className="text-muted-foreground">Errors</div>
-          </div>
+          {(stats.errors > 0) && (
+            <>
+              <div className="w-px bg-white/10 my-2" />
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-400">{stats.errors}</div>
+                <div className="text-zinc-500 text-xs font-medium uppercase tracking-wider">Errors</div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
       {/* Content Table */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div className="glass-card rounded-2xl overflow-hidden shadow-2xl">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-border bg-muted/30">
+            <tr className="border-b border-white/10 bg-white/5">
               <th className="p-4 text-left">
                 <input
                   type="checkbox"
@@ -750,7 +757,7 @@ export function ReviewExport() {
               </tr>
             ) : (
               sortedItems.map(item => (
-                <tr key={item.id} className="border-b border-border hover:bg-muted/20">
+                <tr key={item.id} className="border-b border-white/5 hover:bg-white/5 transition-colors duration-200 group">
                   <td className="p-4">
                     <input
                       type="checkbox"
@@ -860,51 +867,55 @@ export function ReviewExport() {
 
       {/* ── Bulk Publish Modal ── */}
       {showBulkPublishModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-lg p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
-                <Upload className="w-5 h-5 text-green-400" />
-                Bulk Publish to WordPress
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[60] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="glass-card border border-white/10 rounded-3xl w-full max-w-lg p-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2" />
+
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                <div className="p-2 bg-emerald-500/20 rounded-xl">
+                  <Upload className="w-6 h-6 text-emerald-400" />
+                </div>
+                Bulk Publish
               </h3>
               <button
                 onClick={() => { setShowBulkPublishModal(false); setBulkPublishItems([]); }}
-                className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50"
+                className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-white/10 transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
             {!wpConfigured ? (
-              <div className="text-center py-8">
-                <AlertCircle className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-                <h4 className="text-lg font-semibold text-foreground mb-2">WordPress Not Configured</h4>
-                <p className="text-muted-foreground mb-4">
+              <div className="text-center py-10 bg-white/5 rounded-2xl border border-white/10">
+                <AlertCircle className="w-16 h-16 text-yellow-400 mx-auto mb-6" />
+                <h4 className="text-xl font-bold text-white mb-2">WordPress Not Configured</h4>
+                <p className="text-zinc-400 mb-8 max-w-xs mx-auto">
                   Add your WordPress URL, username, and application password in the Setup tab to enable publishing.
                 </p>
                 <button
                   onClick={() => setShowBulkPublishModal(false)}
-                  className="px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80"
+                  className="px-6 py-3 bg-white/10 text-white font-bold rounded-xl hover:bg-white/20 transition-all"
                 >
-                  Close
+                  Close & Configure
                 </button>
               </div>
             ) : bulkPublishItems.length === 0 ? (
               /* Pre-publish confirmation */
               <>
-                <div className="space-y-4 mb-6">
+                <div className="space-y-6 mb-8">
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Publish Status for All Posts
+                    <label className="block text-sm font-bold text-zinc-300 mb-3 ml-1">
+                      Publication Status
                     </label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-3 p-1 bg-black/20 rounded-2xl border border-white/5">
                       <button
                         onClick={() => setBulkPublishStatus('draft')}
                         className={cn(
-                          "flex-1 px-4 py-3 rounded-xl font-medium transition-all border",
+                          "flex-1 px-4 py-3 rounded-xl font-bold transition-all",
                           bulkPublishStatus === 'draft'
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/50"
+                            ? "bg-primary text-white shadow-lg"
+                            : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
                         )}
                       >
                         📝 Draft
@@ -912,30 +923,33 @@ export function ReviewExport() {
                       <button
                         onClick={() => setBulkPublishStatus('publish')}
                         className={cn(
-                          "flex-1 px-4 py-3 rounded-xl font-medium transition-all border",
+                          "flex-1 px-4 py-3 rounded-xl font-bold transition-all",
                           bulkPublishStatus === 'publish'
-                            ? "bg-green-600 text-white border-green-600"
-                            : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/50"
+                            ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                            : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
                         )}
                       >
-                        🚀 Publish
+                        🚀 Publish Live
                       </button>
                     </div>
                   </div>
 
-                  <div className="p-4 bg-muted/20 border border-border rounded-xl">
-                    <h4 className="text-sm font-medium text-foreground mb-3">Posts to publish:</h4>
-                    <ul className="text-sm text-muted-foreground space-y-2 max-h-48 overflow-y-auto">
+                  <div className="p-5 bg-black/20 border border-white/10 rounded-2xl">
+                    <h4 className="text-sm font-bold text-zinc-300 mb-4 flex items-center justify-between">
+                      <span>Publishing Queue</span>
+                      <span className="text-xs font-normal text-zinc-500">{(publishableSelected.length > 0 ? publishableSelected : allPublishable).length} items</span>
+                    </h4>
+                    <ul className="text-sm text-zinc-400 space-y-3 max-h-48 overflow-y-auto custom-scrollbar pr-2">
                       {(publishableSelected.length > 0 ? publishableSelected : allPublishable).map((item, i) => {
                         const stored = generatedContentsStore[item.id];
                         return (
-                          <li key={item.id} className="flex items-start gap-2">
-                            <span className="text-green-400 font-mono text-xs mt-0.5">{i + 1}.</span>
-                            <div>
-                              <span className="text-foreground font-medium">{item.title}</span>
+                          <li key={item.id} className="flex items-center gap-3 group">
+                            <span className="text-emerald-500/50 font-mono text-xs w-6 text-right">{i + 1}.</span>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-zinc-200 font-medium truncate block group-hover:text-emerald-400 transition-colors">{item.title}</span>
                               {stored && (
-                                <span className="text-muted-foreground text-xs ml-2">
-                                  ({stored.wordCount?.toLocaleString() || '—'} words)
+                                <span className="text-zinc-600 text-xs">
+                                  {stored.wordCount?.toLocaleString() || '0'} words • {stored.seoTitle ? 'SEO Ready' : 'Raw Title'}
                                 </span>
                               )}
                             </div>
@@ -943,79 +957,75 @@ export function ReviewExport() {
                         );
                       })}
                     </ul>
-                    <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
-                      ✨ SEO titles, meta descriptions, and slugs will be set for each post
-                    </div>
                   </div>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex gap-4">
                   <button
                     onClick={() => setShowBulkPublishModal(false)}
-                    className="flex-1 px-4 py-3 bg-muted text-foreground rounded-xl font-medium hover:bg-muted/80 transition-all"
+                    className="flex-1 px-6 py-4 bg-white/5 text-zinc-300 rounded-2xl font-bold hover:bg-white/10 transition-all border border-white/5"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={() => { handleBulkPublish(); }}
-                    className="flex-1 px-4 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-all flex items-center justify-center gap-2"
+                    className="flex-1 px-6 py-4 bg-gradient-to-r from-emerald-600 to-emerald-400 text-white rounded-2xl font-bold hover:brightness-110 transition-all flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] hover:-translate-y-1"
                   >
-                    <Upload className="w-4 h-4" />
-                    Publish {(publishableSelected.length > 0 ? publishableSelected : allPublishable).length} Posts
+                    <Upload className="w-5 h-5 fill-current" />
+                    Start Publishing
                   </button>
                 </div>
               </>
             ) : (
               /* Publishing progress */
               <>
-                <div className="space-y-3 max-h-72 overflow-y-auto mb-6">
+                <div className="space-y-3 max-h-[400px] overflow-y-auto mb-8 custom-scrollbar pr-2">
                   {bulkPublishItems.map((item, i) => (
                     <div
                       key={item.id}
                       className={cn(
-                        "flex items-center gap-3 p-3 rounded-xl border transition-all",
-                        item.status === 'published' && "bg-green-500/10 border-green-500/30",
-                        item.status === 'publishing' && "bg-blue-500/10 border-blue-500/30",
-                        item.status === 'error' && "bg-red-500/10 border-red-500/30",
-                        item.status === 'pending' && "bg-muted/20 border-border"
+                        "flex items-center gap-4 p-4 rounded-xl border transition-all",
+                        item.status === 'published' && "bg-emerald-500/10 border-emerald-500/20",
+                        item.status === 'publishing' && "bg-primary/10 border-primary/20",
+                        item.status === 'error' && "bg-red-500/10 border-red-500/20",
+                        item.status === 'pending' && "bg-white/5 border-white/5"
                       )}
                     >
                       <div className="flex-shrink-0">
-                        {item.status === 'pending' && <Clock className="w-4 h-4 text-muted-foreground" />}
-                        {item.status === 'publishing' && <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />}
-                        {item.status === 'published' && <CheckCircle className="w-4 h-4 text-green-400" />}
-                        {item.status === 'error' && <XCircle className="w-4 h-4 text-red-400" />}
+                        {item.status === 'pending' && <Clock className="w-5 h-5 text-zinc-600" />}
+                        {item.status === 'publishing' && <Loader2 className="w-5 h-5 text-primary animate-spin" />}
+                        {item.status === 'published' && <CheckCircle className="w-5 h-5 text-emerald-400" />}
+                        {item.status === 'error' && <XCircle className="w-5 h-5 text-red-400" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-foreground truncate">{item.title}</div>
-                        {item.status === 'published' && item.postUrl && (
+                        <div className="text-sm font-bold text-white truncate mb-0.5">{item.title}</div>
+                        {item.status === 'published' && item.postUrl ? (
                           <a
                             href={item.postUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-green-400 hover:underline"
+                            className="text-xs text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-1"
                           >
-                            View post →
+                            View post <ArrowRight className="w-3 h-3" />
                           </a>
-                        )}
-                        {item.status === 'error' && item.error && (
+                        ) : item.status === 'error' && item.error ? (
                           <div className="text-xs text-red-400 truncate">{item.error}</div>
+                        ) : (
+                          <div className="text-xs text-zinc-500 capitalize">{item.status}...</div>
                         )}
                       </div>
-                      <span className="text-xs text-muted-foreground font-mono">{i + 1}/{bulkPublishItems.length}</span>
+                      <span className="text-xs text-zinc-600 font-mono">{i + 1}/{bulkPublishItems.length}</span>
                     </div>
                   ))}
                 </div>
 
                 {!isBulkPublishing && (
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => { setShowBulkPublishModal(false); setBulkPublishItems([]); }}
-                      className="flex-1 px-4 py-3 bg-muted text-foreground rounded-xl font-medium hover:bg-muted/80 transition-all"
-                    >
-                      Close
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => { setShowBulkPublishModal(false); setBulkPublishItems([]); }}
+                    className="w-full px-6 py-4 bg-white/10 text-white rounded-2xl font-bold hover:bg-white/20 transition-all border border-white/10"
+                  >
+                    Close
+                  </button>
                 )}
               </>
             )}
@@ -1029,20 +1039,20 @@ export function ReviewExport() {
 function StatusBadge({ ok, label, optional }: { ok: boolean; label: string; optional?: boolean }) {
   if (optional && !ok) {
     return (
-      <span className="flex items-center gap-1.5 text-muted-foreground">
-        <span className="w-2 h-2 rounded-full bg-muted-foreground" />
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/5 bg-white/5 text-zinc-400 text-xs font-medium">
+        <div className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
         {label}
-      </span>
+      </div>
     );
   }
 
   return (
-    <span className={cn(
-      "flex items-center gap-1.5",
-      ok ? "text-green-400" : "text-red-400"
+    <div className={cn(
+      "flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium backdrop-blur-sm transition-all",
+      ok ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.1)]" : "bg-red-500/10 border-red-500/20 text-red-400"
     )}>
-      {ok ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+      {ok ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
       {label}
-    </span>
+    </div>
   );
 }

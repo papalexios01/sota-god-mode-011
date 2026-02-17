@@ -33,71 +33,81 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen gradient-bg selection:bg-primary/30 selection:text-foreground">
+    <div className="min-h-screen gradient-bg selection:bg-primary/30 selection:text-foreground relative overflow-hidden">
+      <div className="hero-glow animate-pulse-glow" />
+
       {/* Header */}
-      <header className="px-6 py-4 sticky top-0 z-50 backdrop-blur supports-[backdrop-filter]:bg-background/40 border-b border-border/40">
+      <header className="px-6 py-4 sticky top-0 z-50 backdrop-blur-md bg-background/10 border-b border-white/5 supports-[backdrop-filter]:bg-background/20">
         <div className="max-w-7xl mx-auto flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center glass-card">
-            <Zap className="w-6 h-6 text-primary" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center glass-card shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+            <Zap className="w-6 h-6 text-primary drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-foreground">
-              WP Content Optimizer <span className="text-primary">PRO</span>
+            <h1 className="text-xl font-bold tracking-tight text-white drop-shadow-sm">
+              WP Content Optimizer <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">PRO</span>
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Enterprise-Grade SEO Automation by{" "}
-              <a href="https://affiliatemarketingforsuccess.com" className="text-primary hover:underline">
-                AffiliateMarketingForSuccess.com
-              </a>
+            <p className="text-xs text-zinc-400 font-medium tracking-wide">
+              ENTERPRISE-GRADE SEO AUTOMATION
             </p>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <main className="px-6 py-16 md:py-24">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-6xl font-bold text-foreground mb-2">
+      <main className="px-6 py-20 md:py-32 relative z-10">
+        <div className="max-w-5xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-card border-primary/20 text-primary text-sm font-medium mb-8 animate-float">
+            <Sparkles className="w-4 h-4" />
+            <span>v3.0 Now Available: The Ultimate SEO Weapon</span>
+          </div>
+
+          <h2 className="text-5xl md:text-7xl font-extrabold text-white mb-4 tracking-tight leading-tight drop-shadow-2xl">
             Turn Your Content Into
           </h2>
-          <h2 className="text-4xl md:text-6xl font-bold gradient-text mb-8">
-            Premium Ranking Assets
+          <h2 className="text-5xl md:text-7xl font-extrabold mb-8 tracking-tight leading-tight">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-emerald-400 to-accent drop-shadow-[0_0_30px_rgba(16,185,129,0.4)]">
+              Premium Ranking Assets
+            </span>
           </h2>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-            AI-powered SEO optimization that adapts to Google's algorithm in real-time.
-            Generate, optimize, and publish content that dominates search results.
+          <p className="text-lg md:text-xl text-zinc-400 max-w-3xl mx-auto mb-12 leading-relaxed font-light">
+            Autonomous AI agents that analyze, optimize, and dominate Google's algorithm in real-time.
+            <span className="text-zinc-200"> Experience the God Mode advantage.</span>
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button 
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+            <button
               onClick={() => setShowOptimizer(true)}
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-primary text-primary-foreground font-semibold rounded-full hover:bg-primary/90 transition-colors"
+              className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-primary text-white font-bold text-lg rounded-full hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_40px_rgba(16,185,129,0.6)] hover:scale-105"
             >
-              <Zap className="w-5 h-5" />
-              Launch Optimizer
+              <Zap className="w-6 h-6 fill-current" />
+              Launch God Mode
+              <div className="absolute inset-0 rounded-full ring-2 ring-white/20 group-hover:ring-white/40 transition-all" />
             </button>
-            <button className="inline-flex items-center justify-center gap-2 px-8 py-4 border border-primary text-primary font-semibold rounded-full hover:bg-primary/10 transition-colors">
-              <Sparkles className="w-5 h-5" />
-              Explore SEO Arsenal
+            <button className="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-background/30 backdrop-blur-sm border border-white/10 text-white font-semibold text-lg rounded-full hover:bg-white/5 transition-all hover:border-white/20">
+              <Sparkles className="w-5 h-5 text-accent group-hover:text-accent/80" />
+              View Features
             </button>
           </div>
         </div>
 
         {/* Feature Cards */}
-        <div className="max-w-7xl mx-auto mt-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feature) => (
+        <div className="max-w-7xl mx-auto mt-24 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {features.map((feature, idx) => (
             <div
               key={feature.title}
-              className="glass-card rounded-2xl p-6 hover:border-primary/60 transition-all hover:-translate-y-0.5 hover:shadow-2xl"
+              className="glass-card rounded-2xl p-8 hover:border-primary/50 transition-all duration-500 group relative overflow-hidden"
+              style={{ transitionDelay: `${idx * 100}ms` }}
             >
-              <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center mb-4">
-                <feature.icon className="w-6 h-6 text-primary" />
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+              <div className="w-14 h-14 bg-gradient-to-br from-gray-800 to-black border border-white/5 rounded-2xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform duration-500">
+                <feature.icon className="w-7 h-7 text-primary group-hover:text-emerald-300 transition-colors" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">
+              <h3 className="text-xl font-bold text-white mb-3 group-hover:text-primary transition-colors">
                 {feature.title}
               </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-sm text-zinc-400 leading-relaxed group-hover:text-zinc-300 transition-colors">
                 {feature.description}
               </p>
             </div>
@@ -106,40 +116,32 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="px-6 py-8 border-t border-border mt-auto">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-card border border-border rounded-lg flex items-center justify-center">
-              <span className="text-xs text-muted-foreground text-center leading-tight">
-                Affiliate<br />Marketing
-              </span>
+      <footer className="px-6 py-12 border-t border-white/5 mt-auto bg-black/20 backdrop-blur-sm relative z-10">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-transparent border border-white/10 rounded-xl flex items-center justify-center backdrop-blur-md">
+              <Zap className="w-8 h-8 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">
-                Created by <span className="text-foreground font-medium">Alexios Papaioannou</span>
+              <p className="text-sm text-zinc-500 font-medium">
+                Engineered by <span className="text-white">Alexios Papaioannou</span>
               </p>
-              <p className="text-sm text-muted-foreground">
-                Owner of{" "}
-                <a href="https://affiliatemarketingforsuccess.com" className="text-primary hover:underline">
-                  affiliatemarketingforsuccess.com
-                </a>
-              </p>
+              <a href="https://affiliatemarketingforsuccess.com" className="text-xs text-primary hover:text-emerald-300 transition-colors hover:underline underline-offset-4">
+                affiliatemarketingforsuccess.com
+              </a>
             </div>
           </div>
 
-          <div className="flex flex-col items-center md:items-end gap-2">
-            <span className="text-sm text-muted-foreground">Learn More About:</span>
-            <div className="flex flex-wrap gap-4 text-sm">
-              {["Affiliate Marketing", "AI", "SEO", "Blogging", "Reviews"].map((item) => (
-                <a
-                  key={item}
-                  href="#"
-                  className="text-muted-foreground hover:text-primary transition-colors"
-                >
-                  {item}
-                </a>
-              ))}
-            </div>
+          <div className="flex flex-wrap justify-center gap-6 text-sm text-zinc-500 font-medium">
+            {["Terms", "Privacy", "Support", "Documentation"].map((item) => (
+              <a
+                key={item}
+                href="#"
+                className="hover:text-primary transition-all hover:scale-105 transform cursor-pointer"
+              >
+                {item}
+              </a>
+            ))}
           </div>
         </div>
       </footer>

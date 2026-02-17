@@ -24,6 +24,7 @@ export interface NeuronWriterHeading {
   text: string;
   usage_pc?: number;
   count?: number;
+  level?: 'h1' | 'h2' | 'h3';
 }
 
 export interface NeuronWriterAnalysis {
@@ -37,6 +38,8 @@ export interface NeuronWriterAnalysis {
   recommended_length?: number;
   language?: string;
   keyword?: string;
+  query_id?: string;
+  status?: string;
 
   basicKeywords?: NeuronWriterTermData[];
   extendedKeywords?: NeuronWriterTermData[];
@@ -155,18 +158,18 @@ export class NeuronWriterService {
 
       const rawProjects: any[] =
         Array.isArray(raw) ? raw :
-        Array.isArray(raw?.projects) ? raw.projects :
-        Array.isArray(raw?.data) ? raw.data :
-        Array.isArray(raw?.data?.projects) ? raw.data.projects :
-        [];
+          Array.isArray(raw?.projects) ? raw.projects :
+            Array.isArray(raw?.data) ? raw.data :
+              Array.isArray(raw?.data?.projects) ? raw.data.projects :
+                [];
 
       const projects = rawProjects.map((p: any) => ({
         id: String(p.id || p.project_id || p._id || ''),
         name: String(p.name || p.project_name || p.title || `Project ${p.id || 'unknown'}`),
         queries_count: typeof p.queries_count === 'number' ? p.queries_count :
-                       typeof p.queries === 'number' ? p.queries :
-                       typeof p.count === 'number' ? p.count :
-                       undefined,
+          typeof p.queries === 'number' ? p.queries :
+            typeof p.count === 'number' ? p.count :
+              undefined,
       })).filter((p: any) => p.id);
 
       if (projects.length === 0 && rawProjects.length > 0) {
@@ -198,7 +201,7 @@ export class NeuronWriterService {
 
       const queries = Array.isArray(res.data) ? res.data :
         Array.isArray(res.data?.queries) ? res.data.queries :
-        Array.isArray(res.data?.data) ? res.data.data : [];
+          Array.isArray(res.data?.data) ? res.data.data : [];
 
       const keywordLower = keyword.toLowerCase().trim();
 
@@ -474,6 +477,9 @@ export class NeuronWriterService {
     const headingsH2: NeuronWriterHeading[] = [];
     const headingsH3: NeuronWriterHeading[] = [];
 
+    const query_id = queryId || raw?.query_id || raw?.id || undefined;
+    const status = raw?.status || raw?.query_status || undefined;
+
     const rawTerms = raw?.terms || raw?.keywords || raw?.data?.terms || [];
     if (Array.isArray(rawTerms)) {
       for (const t of rawTerms) {
@@ -484,7 +490,7 @@ export class NeuronWriterService {
         const frequency = t.frequency || t.recommended || t.rec || t.target || 1;
         const type: 'required' | 'recommended' | 'optional' =
           t.type === 'required' || weight >= 70 ? 'required' :
-          t.type === 'recommended' || weight >= 40 ? 'recommended' : 'optional';
+            t.type === 'recommended' || weight >= 40 ? 'recommended' : 'optional';
 
         terms.push({ term: termText, weight, frequency, type, usage_pc: t.usage_pc });
       }
@@ -514,18 +520,19 @@ export class NeuronWriterService {
       }
     }
 
-    const parseHeadings = (source: any[]): NeuronWriterHeading[] => {
+    const parseHeadings = (source: any[], level: 'h1' | 'h2' | 'h3'): NeuronWriterHeading[] => {
       if (!Array.isArray(source)) return [];
       return source.map(h => ({
         text: h.text || h.heading || h.title || '',
         usage_pc: h.usage_pc || h.count,
         count: h.count,
+        level,
       })).filter(h => h.text);
     };
 
-    headingsH1.push(...parseHeadings(raw?.headings_h1 || raw?.headingsH1 || raw?.data?.headings_h1 || []));
-    headingsH2.push(...parseHeadings(raw?.headings_h2 || raw?.headingsH2 || raw?.data?.headings_h2 || []));
-    headingsH3.push(...parseHeadings(raw?.headings_h3 || raw?.headingsH3 || raw?.data?.headings_h3 || []));
+    headingsH1.push(...parseHeadings(raw?.headings_h1 || raw?.headingsH1 || raw?.data?.headings_h1 || [], 'h1'));
+    headingsH2.push(...parseHeadings(raw?.headings_h2 || raw?.headingsH2 || raw?.data?.headings_h2 || [], 'h2'));
+    headingsH3.push(...parseHeadings(raw?.headings_h3 || raw?.headingsH3 || raw?.data?.headings_h3 || [], 'h3'));
 
     const rawCompetitors = raw?.competitors || raw?.serp || raw?.data?.competitors || [];
     const competitorData = Array.isArray(rawCompetitors) ? rawCompetitors.map((c: any) => ({
@@ -587,6 +594,8 @@ export class NeuronWriterService {
       recommended_length: raw?.recommended_length ?? raw?.word_count ?? avgCompWordCount,
       language: raw?.language || raw?.lang || 'en',
       keyword: raw?.keyword || raw?.query || '',
+      query_id,
+      status,
 
       basicKeywords,
       extendedKeywords,

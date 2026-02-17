@@ -299,8 +299,8 @@ export function ContentViewerPanel({
 
   const neuronTermCount = neuronData
     ? (neuronData.basicKeywords?.length || 0) +
-      (neuronData.extendedKeywords?.length || 0) +
-      (neuronData.entities?.length || 0)
+    (neuronData.extendedKeywords?.length || 0) +
+    (neuronData.entities?.length || 0)
     : (neuronData as any)?.terms?.length || 0;
 
   const tabs: { id: ViewTab; label: string; icon: React.ReactNode; badge?: number }[] = [
@@ -319,45 +319,45 @@ export function ContentViewerPanel({
 
   return (
     <div className={cn(
-      "fixed bg-background/98 backdrop-blur-xl z-50 flex flex-col",
-      isFullscreen ? "inset-0" : "inset-4 rounded-2xl border border-border"
+      "fixed bg-black/90 backdrop-blur-xl z-[60] flex flex-col transition-all duration-300",
+      isFullscreen ? "inset-0" : "inset-4 rounded-3xl border border-white/10 shadow-2xl"
     )}>
       {/* ═══════════════ HEADER ═══════════════ */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card/50">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1">
-            <button onClick={onPrevious} disabled={!hasPrevious} className="p-2 rounded-lg bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+      <div className="flex items-center justify-between p-5 border-b border-white/10 bg-white/5 backdrop-blur-md z-10">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <button onClick={onPrevious} disabled={!hasPrevious} className="p-2.5 rounded-xl bg-black/20 text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-white/5">
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <button onClick={onNext} disabled={!hasNext} className="p-2 rounded-lg bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-all">
+            <button onClick={onNext} disabled={!hasNext} className="p-2.5 rounded-xl bg-black/20 text-zinc-400 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-white/5">
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <span className={cn(
-                "px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider",
-                item.type === 'pillar' && "bg-purple-500/20 text-purple-400 border border-purple-500/30",
-                item.type === 'cluster' && "bg-blue-500/20 text-blue-400 border border-blue-500/30",
-                item.type === 'single' && "bg-primary/20 text-primary border border-primary/30",
-                item.type === 'refresh' && "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                "px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-sm",
+                item.type === 'pillar' && "bg-purple-500/10 text-purple-400 border-purple-500/20",
+                item.type === 'cluster' && "bg-blue-500/10 text-blue-400 border-blue-500/20",
+                item.type === 'single' && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+                item.type === 'refresh' && "bg-amber-500/10 text-amber-400 border-amber-500/20"
               )}>{item.type}</span>
-              <h2 className="text-lg font-bold text-foreground truncate max-w-[500px]">{item.title}</h2>
+              <h2 className="text-xl font-bold text-white truncate max-w-[600px]">{item.title}</h2>
             </div>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-              <span className="flex items-center gap-1"><FileText className="w-3.5 h-3.5" />{wordCount.toLocaleString()} words</span>
-              <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />~{Math.ceil(wordCount / 200)} min read</span>
-              <span className="flex items-center gap-1"><Target className="w-3.5 h-3.5" />{item.primaryKeyword}</span>
+            <div className="flex items-center gap-6 text-xs text-zinc-400 mt-2 font-medium">
+              <span className="flex items-center gap-1.5"><div className="p-1 bg-white/5 rounded"><FileText className="w-3 h-3" /></div>{wordCount.toLocaleString()} words</span>
+              <span className="flex items-center gap-1.5"><div className="p-1 bg-white/5 rounded"><Clock className="w-3 h-3" /></div>~{Math.ceil(wordCount / 200)} min read</span>
+              <span className="flex items-center gap-1.5"><div className="p-1 bg-white/5 rounded"><Target className="w-3 h-3" /></div>{item.primaryKeyword}</span>
               {generatedContent && (
-                <span className="flex items-center gap-1">
-                  <Award className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-primary font-medium">{generatedContent.qualityScore.overall}% Quality</span>
+                <span className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                  <Award className="w-3 h-3 text-emerald-400" />
+                  <span className="text-emerald-400 font-bold">{generatedContent.qualityScore.overall}% Quality</span>
                 </span>
               )}
               {neuronLiveScore && (
-                <span className="flex items-center gap-1">
-                  <Brain className="w-3.5 h-3.5 text-purple-400" />
-                  <span className={cn("font-medium", neuronLiveScore.score >= 90 ? "text-green-400" : neuronLiveScore.score >= 70 ? "text-yellow-400" : "text-red-400")}>
+                <span className="flex items-center gap-1.5 px-2 py-0.5 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                  <Brain className="w-3 h-3 text-purple-400" />
+                  <span className={cn("font-bold", neuronLiveScore.score >= 90 ? "text-emerald-400" : neuronLiveScore.score >= 70 ? "text-yellow-400" : "text-red-400")}>
                     {neuronLiveScore.score}% NW
                   </span>
                 </span>
@@ -365,79 +365,106 @@ export function ContentViewerPanel({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button onClick={handleCopy} disabled={!hasContent} className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-all disabled:opacity-30">
-            {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-            <span className="hidden sm:inline">{copied ? 'Copied!' : 'Copy'}</span>
-          </button>
-          <button onClick={handleDownload} disabled={!hasContent} className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-all disabled:opacity-30">
-            <Download className="w-4 h-4" /><span className="hidden sm:inline">Download</span>
-          </button>
-          <button onClick={() => setShowPublishModal(true)} disabled={!hasContent} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-all disabled:opacity-30">
+        <div className="flex items-center gap-3">
+          <div className="flex bg-black/20 p-1 rounded-xl border border-white/5">
+            <button onClick={handleCopy} disabled={!hasContent} className="flex items-center gap-2 px-4 py-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-all disabled:opacity-30">
+              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              <span className="hidden xl:inline text-sm font-medium">{copied ? 'Copied!' : 'Copy'}</span>
+            </button>
+            <div className="w-px bg-white/5 my-2" />
+            <button onClick={handleDownload} disabled={!hasContent} className="flex items-center gap-2 px-4 py-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-all disabled:opacity-30">
+              <Download className="w-4 h-4" /><span className="hidden xl:inline text-sm font-medium">Download</span>
+            </button>
+          </div>
+
+          <button onClick={() => setShowPublishModal(true)} disabled={!hasContent} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary to-emerald-500 text-white shadow-lg shadow-primary/20 rounded-xl text-sm font-bold hover:brightness-110 transition-all disabled:opacity-30 transform hover:-translate-y-0.5">
             <Upload className="w-4 h-4" />Publish to WP
           </button>
-          <button onClick={() => setIsFullscreen(!isFullscreen)} className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-all">
-            {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-          </button>
-          <button onClick={onClose} className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-all">
-            <X className="w-5 h-5" />
-          </button>
+
+          <div className="flex bg-black/20 p-1 rounded-xl border border-white/5 ml-2">
+            <button onClick={() => setIsFullscreen(!isFullscreen)} className="p-2.5 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10 transition-all">
+              {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+            </button>
+            <div className="w-px bg-white/5 my-2" />
+            <button onClick={onClose} className="p-2.5 text-zinc-400 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-all">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* ═══════════════ TABS ═══════════════ */}
-      <div className="flex border-b border-border bg-card/30 overflow-x-auto">
+      <div className="flex border-b border-white/10 bg-black/20 overflow-x-auto">
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn(
-            "flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap",
-            activeTab === tab.id ? "text-primary border-primary bg-primary/5" : "text-muted-foreground border-transparent hover:text-foreground hover:border-muted-foreground/30"
+            "flex items-center gap-2.5 px-6 py-4 text-sm font-bold transition-all relative whitespace-nowrap group",
+            activeTab === tab.id ? "text-primary" : "text-zinc-500 hover:text-zinc-300"
           )}>
-            {tab.icon}
+            <div className={cn(
+              "p-1 rounded-md transition-colors",
+              activeTab === tab.id ? "bg-primary/20 text-primary" : "bg-transparent group-hover:bg-white/5"
+            )}>
+              {tab.icon}
+            </div>
             {tab.label}
             {tab.badge !== undefined && tab.badge > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 bg-primary/20 text-primary text-xs rounded-full font-bold">{tab.badge}</span>
+              <span className={cn(
+                "ml-1 px-1.5 py-0.5 text-[10px] rounded-full font-bold",
+                activeTab === tab.id ? "bg-primary text-white" : "bg-zinc-800 text-zinc-400"
+              )}>{tab.badge}</span>
+            )}
+            {activeTab === tab.id && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/0 via-primary to-primary/0" />
             )}
           </button>
         ))}
       </div>
 
       {/* ═══════════════ CONTENT AREA ═══════════════ */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto bg-black/10 custom-scrollbar">
         {!hasContent ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
-            <div className="w-20 h-20 rounded-full bg-muted/30 flex items-center justify-center mb-6">
-              <FileText className="w-10 h-10 text-muted-foreground" />
+            <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-6 border border-white/10 shadow-2xl relative">
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl -z-10" />
+              <FileText className="w-10 h-10 text-zinc-500" />
             </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">Content Not Yet Generated</h3>
-            <p className="text-muted-foreground max-w-md mb-6">Select this item and click "Generate Selected" to create the content.</p>
-            <div className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-yellow-400 text-sm">
-              <Clock className="w-4 h-4" />Status: {item.status}
+            <h3 className="text-2xl font-bold text-white mb-2">Content Not Yet Generated</h3>
+            <p className="text-zinc-400 max-w-md mb-8">Select this item and click "Generate Selected" to initiate our SOTA content engine.</p>
+            <div className="flex items-center gap-3 px-5 py-2.5 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-yellow-400 text-sm font-medium">
+              <Clock className="w-4 h-4" />Status: <span className="uppercase tracking-wider font-bold">{item.status}</span>
             </div>
           </div>
         ) : (
           <>
             {/* ────── PREVIEW TAB ────── */}
             {activeTab === 'preview' && (
-              <div className="p-6">
-                <div className="flex items-center gap-2 mb-4 px-2">
-                  <Globe className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">WordPress Preview</span>
-                  {isEditorDirty && (
-                    <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded-full font-medium ml-2">Showing edited version</span>
-                  )}
+              <div className="p-8">
+                <div className="flex items-center justify-center mb-8">
+                  <div className="inline-flex items-center gap-3 px-4 py-2 bg-white/5 rounded-full border border-white/5 backdrop-blur-sm">
+                    <Globe className="w-4 h-4 text-zinc-400" />
+                    <span className="text-sm font-medium text-zinc-300">WordPress Preview Mode</span>
+                    {isEditorDirty && (
+                      <span className="flex items-center gap-1.5 px-2 py-0.5 bg-yellow-500/10 text-yellow-400 text-[10px] font-bold uppercase tracking-wider rounded-lg border border-yellow-500/20 ml-2">
+                        <Edit3 className="w-3 h-3" /> Modified
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden max-w-4xl mx-auto">
-                  <div className="bg-gray-100 px-4 py-2.5 border-b border-gray-200 flex items-center gap-3">
+
+                <div className="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-4xl mx-auto ring-8 ring-black/20">
+                  <div className="bg-gray-100 px-4 py-3 text-sm text-gray-500 border-b flex items-center gap-4">
                     <div className="flex gap-1.5">
-                      <div className="w-3 h-3 rounded-full bg-red-400" />
-                      <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                      <div className="w-3 h-3 rounded-full bg-green-400" />
+                      <div className="w-3 h-3 rounded-full bg-red-400 border border-red-500/20" />
+                      <div className="w-3 h-3 rounded-full bg-amber-400 border border-amber-500/20" />
+                      <div className="w-3 h-3 rounded-full bg-green-400 border border-green-500/20" />
                     </div>
-                    <div className="flex-1 bg-white rounded-lg px-3 py-1 text-xs text-gray-500 font-mono truncate border border-gray-200">
+                    <div className="flex-1 bg-white border border-gray-200 rounded-md px-3 py-1 text-center font-mono text-xs text-gray-400 shadow-sm">
                       {item.url || `yoursite.com/${effectivePublishSlug}`}
                     </div>
+                    <div className="w-12" />
                   </div>
-                  <style dangerouslySetInnerHTML={{ __html: `
+                  <style dangerouslySetInnerHTML={{
+                    __html: `
                     .wp-preview-content h1 { font-size: 32px; font-weight: 800; color: #0f172a; margin: 32px 0 16px; line-height: 1.3; }
                     .wp-preview-content h2 { font-size: 26px; font-weight: 700; color: #0f172a; margin: 40px 0 16px; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; }
                     .wp-preview-content h3 { font-size: 21px; font-weight: 700; color: #1e293b; margin: 32px 0 12px; }
@@ -465,68 +492,93 @@ export function ContentViewerPanel({
 
             {/* ────── EDITOR TAB ────── */}
             {activeTab === 'editor' && (
-              <div className="p-6 h-full flex flex-col">
-                <div className="bg-card/50 border border-border rounded-xl p-3 mb-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                      <Edit3 className="w-5 h-5 text-primary" />Content Editor
-                      {isEditorDirty && <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded-full font-medium">Unsaved Changes</span>}
+              <div className="p-6 h-full flex flex-col max-w-7xl mx-auto">
+                <div className="glass-card border border-white/10 rounded-2xl p-4 mb-4 flex flex-col shadow-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2.5">
+                      <div className="p-2 bg-primary/20 rounded-lg">
+                        <Edit3 className="w-5 h-5 text-primary" />
+                      </div>
+                      Content Editor
+                      {isEditorDirty && (
+                        <span className="flex items-center gap-1 px-2.5 py-1 bg-yellow-500/10 text-yellow-400 text-[10px] font-bold uppercase tracking-wider rounded-lg border border-yellow-500/20 shadow-[0_0_10px_rgba(234,179,8,0.2)] animate-pulse-subtle">
+                          <Edit3 className="w-3 h-3" /> Unsaved Changes
+                        </span>
+                      )}
                     </h3>
                     <div className="flex items-center gap-2">
-                      <button onClick={handleUndo} disabled={historyIndex <= 0} className="p-2 bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-30" title="Undo"><Undo className="w-4 h-4" /></button>
-                      <button onClick={handleRedo} disabled={historyIndex >= editorHistory.length - 1} className="p-2 bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all disabled:opacity-30" title="Redo"><Redo className="w-4 h-4" /></button>
-                      <div className="w-px h-6 bg-border mx-1" />
-                      <button onClick={handleResetEditor} disabled={!isEditorDirty} className="flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg text-sm transition-all disabled:opacity-30"><RotateCcw className="w-4 h-4" />Reset</button>
-                      <button onClick={() => { navigator.clipboard.writeText(editedContent); toast.success('Copied!'); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/20 text-primary hover:bg-primary/30 rounded-lg text-sm transition-all"><Copy className="w-4 h-4" />Copy</button>
+                      <div className="flex bg-black/20 p-1 rounded-xl border border-white/5">
+                        <button onClick={handleUndo} disabled={historyIndex <= 0} className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10 transition-all disabled:opacity-30 tooltip" title="Undo"><Undo className="w-4 h-4" /></button>
+                        <div className="w-px bg-white/5 my-1" />
+                        <button onClick={handleRedo} disabled={historyIndex >= editorHistory.length - 1} className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10 transition-all disabled:opacity-30 tooltip" title="Redo"><Redo className="w-4 h-4" /></button>
+                      </div>
+
+                      <div className="flex bg-black/20 p-1 rounded-xl border border-white/5 ml-2">
+                        <button onClick={handleResetEditor} disabled={!isEditorDirty} className="flex items-center gap-2 px-3 py-1.5 text-zinc-400 hover:text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/10 transition-all disabled:opacity-30"><RotateCcw className="w-4 h-4" />Reset</button>
+                        <div className="w-px bg-white/5 my-1" />
+                        <button onClick={() => { navigator.clipboard.writeText(editedContent); toast.success('Copied!'); }} className="flex items-center gap-2 px-3 py-1.5 text-zinc-400 hover:text-white rounded-lg text-sm font-medium hover:bg-white/10 transition-all"><Copy className="w-4 h-4" />Copy</button>
+                      </div>
+
                       {onSaveContent && (
-                        <button onClick={handleSaveContent} disabled={!isEditorDirty} className="flex items-center gap-1.5 px-4 py-1.5 bg-green-600 text-white hover:bg-green-700 rounded-lg text-sm font-semibold transition-all disabled:opacity-30 shadow-sm"><Save className="w-4 h-4" />Save Changes</button>
+                        <button onClick={handleSaveContent} disabled={!isEditorDirty} className="ml-2 flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white hover:bg-emerald-500 rounded-xl text-sm font-bold transition-all disabled:opacity-30 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transform hover:-translate-y-0.5"><Save className="w-4 h-4" />Save Changes</button>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 flex-wrap">
-                    <div className="flex items-center gap-0.5 bg-muted/30 rounded-lg p-1">
-                      <button onClick={() => insertHtmlTag('h2')} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-all" title="H2"><Heading2 className="w-4 h-4" /></button>
-                      <button onClick={() => insertHtmlTag('h3')} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-all" title="H3"><Heading3 className="w-4 h-4" /></button>
+
+                  {/* Toolbar */}
+                  <div className="flex items-center gap-2 flex-wrap bg-black/20 p-2 rounded-xl border border-white/5">
+                    <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1 border border-white/5">
+                      <button onClick={() => insertHtmlTag('h2')} className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-md transition-all tooltip" title="H2"><Heading2 className="w-4 h-4" /></button>
+                      <button onClick={() => insertHtmlTag('h3')} className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-md transition-all tooltip" title="H3"><Heading3 className="w-4 h-4" /></button>
                     </div>
-                    <div className="w-px h-6 bg-border mx-1" />
-                    <div className="flex items-center gap-0.5 bg-muted/30 rounded-lg p-1">
-                      <button onClick={() => insertHtmlTag('strong')} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-all" title="Bold"><Bold className="w-4 h-4" /></button>
-                      <button onClick={() => insertHtmlTag('em')} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-all" title="Italic"><Italic className="w-4 h-4" /></button>
+
+                    <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1 border border-white/5">
+                      <button onClick={() => insertHtmlTag('strong')} className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-md transition-all tooltip" title="Bold"><Bold className="w-4 h-4" /></button>
+                      <button onClick={() => insertHtmlTag('em')} className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-md transition-all tooltip" title="Italic"><Italic className="w-4 h-4" /></button>
                     </div>
-                    <div className="w-px h-6 bg-border mx-1" />
-                    <div className="flex items-center gap-0.5 bg-muted/30 rounded-lg p-1">
-                      <button onClick={() => insertHtmlTag('ul')} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-all" title="Bullet List"><List className="w-4 h-4" /></button>
-                      <button onClick={() => insertHtmlTag('ol')} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-all" title="Numbered List"><ListOrdered className="w-4 h-4" /></button>
+
+                    <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1 border border-white/5">
+                      <button onClick={() => insertHtmlTag('ul')} className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-md transition-all tooltip" title="Bullet List"><List className="w-4 h-4" /></button>
+                      <button onClick={() => insertHtmlTag('ol')} className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-md transition-all tooltip" title="Numbered List"><ListOrdered className="w-4 h-4" /></button>
                     </div>
-                    <div className="w-px h-6 bg-border mx-1" />
-                    <div className="flex items-center gap-0.5 bg-muted/30 rounded-lg p-1">
-                      <button onClick={() => insertHtmlTag('blockquote')} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-all" title="Quote"><Quote className="w-4 h-4" /></button>
-                      <button onClick={() => insertHtmlTag('table')} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-all" title="Table"><Table className="w-4 h-4" /></button>
-                      <button onClick={() => insertHtmlTag('img')} className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-all" title="Image"><ImageIcon className="w-4 h-4" /></button>
+
+                    <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1 border border-white/5">
+                      <button onClick={() => insertHtmlTag('blockquote')} className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-md transition-all tooltip" title="Quote"><Quote className="w-4 h-4" /></button>
+                      <button onClick={() => insertHtmlTag('table')} className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-md transition-all tooltip" title="Table"><Table className="w-4 h-4" /></button>
+                      <button onClick={() => insertHtmlTag('img')} className="p-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-md transition-all tooltip" title="Image"><ImageIcon className="w-4 h-4" /></button>
                     </div>
-                    <div className="ml-auto text-xs text-muted-foreground">{editedContent.split(/\s+/).filter(Boolean).length.toLocaleString()} words</div>
+
+                    <div className="ml-auto text-xs font-mono text-zinc-500 bg-black/20 px-3 py-1.5 rounded-lg border border-white/5">
+                      {editedContent.split(/\s+/).filter(Boolean).length.toLocaleString()} words
+                    </div>
                   </div>
                 </div>
-                <div className="flex-1 grid grid-cols-2 gap-4 min-h-0">
-                  <div className="flex flex-col bg-muted/20 border border-border rounded-xl overflow-hidden">
-                    <div className="bg-muted/30 px-4 py-2 border-b border-border flex items-center gap-2">
-                      <Code className="w-4 h-4 text-muted-foreground" /><span className="text-sm font-medium text-foreground">HTML Source</span>
+
+                <div className="flex-1 grid grid-cols-2 gap-6 min-h-0">
+                  {/* Source Editor */}
+                  <div className="flex flex-col glass-card border border-white/10 rounded-2xl overflow-hidden shadow-lg group focus-within:ring-2 ring-primary/50 transition-all">
+                    <div className="bg-white/5 px-4 py-3 border-b border-white/10 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-500" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">HTML Source</span>
                     </div>
                     <textarea
                       ref={textareaRef}
                       value={editedContent}
                       onChange={(e) => handleEditorChange(e.target.value)}
-                      className="flex-1 p-4 bg-transparent text-foreground font-mono text-sm resize-none focus:outline-none placeholder:text-muted-foreground leading-relaxed"
+                      className="flex-1 p-6 bg-black/20 text-blue-200 font-mono text-sm resize-none focus:outline-none placeholder:text-zinc-700 leading-relaxed custom-scrollbar selection:bg-primary/30"
                       placeholder="Paste or type your HTML content here..."
                       spellCheck={false}
                     />
                   </div>
-                  <div className="flex flex-col bg-muted/20 border border-border rounded-xl overflow-hidden">
-                    <div className="bg-muted/30 px-4 py-2 border-b border-border flex items-center gap-2">
-                      <Eye className="w-4 h-4 text-primary" /><span className="text-sm font-medium text-foreground">Live Preview</span>
+
+                  {/* Live Preview */}
+                  <div className="flex flex-col bg-white rounded-2xl overflow-hidden shadow-lg border border-white/10">
+                    <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Live Preview</span>
                     </div>
-                    <div className="flex-1 overflow-auto p-4">
-                      <article className="prose prose-invert prose-sm max-w-none prose-headings:text-foreground prose-h2:text-xl prose-h2:text-primary prose-p:text-muted-foreground prose-p:leading-relaxed prose-a:text-primary prose-strong:text-foreground prose-blockquote:border-l-primary prose-blockquote:bg-muted/30"
+                    <div className="flex-1 overflow-auto p-8 bg-white custom-scrollbar">
+                      <article className="prose prose-sm max-w-none prose-headings:font-bold prose-headings:text-slate-900 prose-p:text-slate-600 prose-p:leading-relaxed prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-xl prose-pre:bg-slate-900 prose-pre:text-slate-50"
                         dangerouslySetInnerHTML={{ __html: sanitizeHtml(editedContent) }}
                       />
                     </div>
@@ -537,28 +589,38 @@ export function ContentViewerPanel({
 
             {/* ────── HTML TAB ────── */}
             {activeTab === 'html' && (
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-foreground">HTML Source</h3>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setShowRawHtml(!showRawHtml)} className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg text-sm text-muted-foreground hover:text-foreground transition-all">
-                      {showRawHtml ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      {showRawHtml ? 'Formatted' : 'Raw'}
-                    </button>
-                    <button onClick={handleCopy} className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 text-primary rounded-lg text-sm hover:bg-primary/30 transition-all">
-                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                      {copied ? 'Copied!' : 'Copy All'}
-                    </button>
+              <div className="p-8 max-w-7xl mx-auto">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                    <div className="p-2 bg-blue-500/20 rounded-xl">
+                      <Code className="w-5 h-5 text-blue-400" />
+                    </div>
+                    HTML Source
+                  </h3>
+                  <div className="flex items-center gap-3">
+                    <div className="flex bg-black/20 p-1 rounded-xl border border-white/5">
+                      <button onClick={() => setShowRawHtml(!showRawHtml)} className="flex items-center gap-2.5 px-4 py-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+                        {showRawHtml ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        <span className="font-medium text-sm">{showRawHtml ? 'Formatted' : 'Raw'}</span>
+                      </button>
+                      <div className="w-px bg-white/5 my-2" />
+                      <button onClick={handleCopy} className="flex items-center gap-2.5 px-4 py-2 text-zinc-400 hover:text-white hover:bg-white/10 rounded-lg transition-all text-sm font-medium">
+                        {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                        {copied ? 'Copied!' : 'Copy All'}
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div className="bg-muted/20 border border-border rounded-xl overflow-hidden">
-                  <div className="bg-muted/30 px-4 py-2 border-b border-border flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500/50" />
-                    <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
-                    <div className="w-3 h-3 rounded-full bg-green-500/50" />
-                    <span className="ml-2 text-xs text-muted-foreground font-mono">content.html</span>
+                <div className="glass-card border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+                  <div className="bg-white/5 px-6 py-3 border-b border-white/10 flex items-center gap-3">
+                    <div className="flex gap-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500/50 border border-red-500/10" />
+                      <div className="w-3 h-3 rounded-full bg-amber-500/50 border border-amber-500/10" />
+                      <div className="w-3 h-3 rounded-full bg-green-500/50 border border-green-500/10" />
+                    </div>
+                    <span className="ml-2 text-xs text-zinc-500 font-mono bg-black/20 px-3 py-1 rounded-full border border-white/5">content.html</span>
                   </div>
-                  <pre className="p-4 overflow-auto text-sm text-foreground font-mono max-h-[60vh] leading-relaxed whitespace-pre-wrap">
+                  <pre className="p-6 overflow-auto text-sm text-blue-200/90 font-mono max-h-[65vh] leading-relaxed whitespace-pre-wrap custom-scrollbar bg-black/20 shadow-inner">
                     {showRawHtml ? content : formatHtml(content)}
                   </pre>
                 </div>
@@ -567,128 +629,180 @@ export function ContentViewerPanel({
 
             {/* ────── SEO ANALYSIS TAB ────── */}
             {activeTab === 'seo' && (
-              <div className="p-6 space-y-6">
+              <div className="p-8 space-y-8 max-w-7xl mx-auto">
                 {generatedContent && (
-                  <div className="bg-card/50 border border-border rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-primary" />Quality Score Breakdown
+                  <div className="glass-card border border-white/10 rounded-3xl p-8 relative overflow-hidden group hover:border-white/20 transition-all shadow-xl">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -z-10 -translate-y-1/2 translate-x-1/3" />
+                    <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                      <div className="p-2 bg-primary/20 rounded-xl">
+                        <BarChart3 className="w-5 h-5 text-primary" />
+                      </div>
+                      Quality Score Breakdown
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      <QualityMetric label="Overall" value={generatedContent.qualityScore.overall} />
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                      <QualityMetric label="Overall Score" value={generatedContent.qualityScore.overall} large />
                       <QualityMetric label="Readability" value={generatedContent.qualityScore.readability} />
-                      <QualityMetric label="SEO" value={generatedContent.qualityScore.seo} />
+                      <QualityMetric label="SEO Optimization" value={generatedContent.qualityScore.seo} />
                       <QualityMetric label="E-E-A-T" value={generatedContent.qualityScore.eeat} />
                       <QualityMetric label="Uniqueness" value={generatedContent.qualityScore.uniqueness} />
                       <QualityMetric label="Fact Accuracy" value={generatedContent.qualityScore.factAccuracy} />
                     </div>
                   </div>
                 )}
-                <div className="bg-card/50 border border-border rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <Target className="w-5 h-5 text-primary" />Keywords
-                  </h3>
-                  <div className="space-y-3">
-                    <div><span className="text-muted-foreground text-sm">Primary:</span> <span className="ml-2 px-3 py-1 bg-primary/20 text-primary rounded-lg text-sm">{item.primaryKeyword}</span></div>
-                    {generatedContent?.secondaryKeywords && generatedContent.secondaryKeywords.length > 0 && (
-                      <div>
-                        <span className="text-muted-foreground text-sm">Secondary:</span>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {generatedContent.secondaryKeywords.map((kw: string, i: number) => (
-                            <span key={i} className="px-2 py-1 bg-muted text-muted-foreground rounded text-xs">{kw}</span>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="glass-card border border-white/10 rounded-3xl p-8 relative overflow-hidden shadow-xl">
+                    <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                      <div className="p-2 bg-purple-500/20 rounded-xl">
+                        <Target className="w-5 h-5 text-purple-400" />
+                      </div>
+                      Keyword Strategy
+                    </h3>
+                    <div className="space-y-6">
+                      <div className="p-5 bg-white/5 rounded-2xl border border-white/5">
+                        <span className="text-zinc-500 text-xs uppercase tracking-wider font-bold block mb-3">Primary Keyword</span>
+                        <span className="inline-block px-4 py-2 bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-xl text-base font-bold shadow-[0_0_15px_rgba(168,85,247,0.15)]">
+                          {item.primaryKeyword}
+                        </span>
+                      </div>
+                      {generatedContent?.secondaryKeywords && generatedContent.secondaryKeywords.length > 0 && (
+                        <div>
+                          <span className="text-zinc-500 text-xs uppercase tracking-wider font-bold block mb-3 ml-1">Secondary Keywords</span>
+                          <div className="flex flex-wrap gap-2.5">
+                            {generatedContent.secondaryKeywords.map((kw: string, i: number) => (
+                              <span key={i} className="px-3 py-1.5 bg-white/5 text-zinc-300 rounded-lg text-sm border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all font-medium">
+                                {kw}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="glass-card border border-white/10 rounded-3xl p-8 relative overflow-hidden shadow-xl">
+                    <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                      <div className="p-2 bg-blue-500/20 rounded-xl">
+                        <Hash className="w-5 h-5 text-blue-400" />
+                      </div>
+                      Content Structure
+                    </h3>
+                    <div className="grid grid-cols-2 gap-5 text-sm mb-6">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5">
+                          <span className="text-zinc-400">H2 Headings</span>
+                          <span className="text-white font-bold text-lg">{headings.h2.length}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5">
+                          <span className="text-zinc-400">H3 Headings</span>
+                          <span className="text-white font-bold text-lg">{headings.h3.length}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5">
+                          <span className="text-zinc-400">Word Count</span>
+                          <span className="text-white font-bold text-lg">{wordCount.toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5">
+                          <span className="text-zinc-400">Internal Links</span>
+                          <span className="text-white font-bold text-lg">{contentLinks.length}</span>
+                        </div>
+                        <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                          <span className="text-zinc-400 block mb-1 text-xs uppercase tracking-wider">URL Slug</span>
+                          <span className="text-blue-400 font-mono text-sm break-all">/{effectivePublishSlug}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {headings.h2.length > 0 && (
+                      <div className="mt-6 pt-6 border-t border-white/10">
+                        <h4 className="text-sm font-bold text-zinc-300 mb-4 uppercase tracking-wider">Heading Outline</h4>
+                        <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
+                          {headings.h2.map((h, i) => (
+                            <div key={`h2-${i}`} className="text-sm text-zinc-400 flex items-start gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors">
+                              <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 text-[10px] font-bold rounded flex-shrink-0 mt-0.5 border border-blue-500/20">H2</span>
+                              <span>{h}</span>
+                            </div>
                           ))}
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
-                <div className="bg-card/50 border border-border rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <Hash className="w-5 h-5 text-primary" />Content Structure
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="space-y-2">
-                      <p className="text-muted-foreground">H2 Headings: <span className="text-foreground font-medium">{headings.h2.length}</span></p>
-                      <p className="text-muted-foreground">H3 Headings: <span className="text-foreground font-medium">{headings.h3.length}</span></p>
-                      <p className="text-muted-foreground">Word Count: <span className="text-foreground font-medium">{wordCount.toLocaleString()}</span></p>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-muted-foreground">Internal Links: <span className="text-foreground font-medium">{contentLinks.length}</span></p>
-                      <p className="text-muted-foreground">Slug: <span className="text-primary font-mono text-xs">/{effectivePublishSlug}</span></p>
-                    </div>
-                  </div>
-                  {headings.h2.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-border">
-                      <h4 className="text-sm font-semibold text-foreground mb-2">Heading Outline</h4>
-                      <div className="space-y-1">
-                        {headings.h2.map((h, i) => (
-                          <div key={`h2-${i}`} className="text-sm text-muted-foreground flex items-start gap-2">
-                            <span className="px-1.5 py-0.5 bg-primary/20 text-primary text-xs rounded font-mono flex-shrink-0 mt-0.5">H2</span>
-                            <span>{h}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
               </div>
             )}
 
             {/* ────── INTERNAL LINKS TAB ────── */}
             {activeTab === 'links' && (
-              <div className="p-6 space-y-6">
-                <div className="bg-card/50 border border-border rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <Link2 className="w-5 h-5 text-primary" />
+              <div className="p-8 max-w-7xl mx-auto space-y-8">
+                <div className="glass-card border border-white/10 rounded-3xl p-8 relative overflow-hidden shadow-2xl">
+                  <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl -z-10 -translate-y-1/2 translate-x-1/3" />
+                  <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                    <div className="p-2 bg-primary/20 rounded-xl">
+                      <Link2 className="w-5 h-5 text-primary" />
+                    </div>
                     Internal Links ({generatedContent?.internalLinks?.length || contentLinks.length})
                   </h3>
+
                   {(generatedContent?.internalLinks && generatedContent.internalLinks.length > 0) ? (
-                    <div className="space-y-3">
+                    <div className="grid gap-4">
                       {generatedContent.internalLinks.map((link: any, i: number) => (
-                        <div key={i} className="flex items-start gap-4 p-4 bg-muted/20 border border-border rounded-xl hover:bg-muted/30 transition-colors">
-                          <div className="flex-shrink-0 w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary text-sm font-bold">{i + 1}</div>
+                        <div key={i} className="group relative flex items-start gap-5 p-5 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 hover:border-white/10 transition-all hover:shadow-lg hover:-translate-y-0.5">
+                          <div className="flex-shrink-0 w-12 h-12 bg-black/20 rounded-xl flex items-center justify-center text-primary font-bold text-lg border border-white/5 shadow-inner">
+                            {i + 1}
+                          </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="text-sm font-semibold text-primary">{link.anchor}</p>
+                            <div className="flex items-center gap-3 mb-1.5">
+                              <p className="text-lg font-bold text-white group-hover:text-primary transition-colors">{link.anchor}</p>
                               {link.position && (
                                 <span className={cn(
-                                  "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                                  link.position === 'early' && "bg-blue-500/20 text-blue-400",
-                                  link.position === 'middle' && "bg-purple-500/20 text-purple-400",
-                                  link.position === 'late' && "bg-amber-500/20 text-amber-400"
+                                  "px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-sm",
+                                  link.position === 'early' && "bg-blue-500/10 text-blue-400 border-blue-500/20",
+                                  link.position === 'middle' && "bg-purple-500/10 text-purple-400 border-purple-500/20",
+                                  link.position === 'late' && "bg-amber-500/10 text-amber-400 border-amber-500/20"
                                 )}>{link.position}</span>
                               )}
                             </div>
-                            <p className="text-xs text-muted-foreground truncate">{link.targetUrl}</p>
+                            <p className="text-sm text-zinc-400 truncate font-mono bg-black/20 px-2 py-0.5 rounded-lg inline-block max-w-full mb-2">{link.targetUrl}</p>
+
                             {link.context && (
-                              <p className="text-xs text-muted-foreground/70 mt-1 italic">{link.context}</p>
+                              <div className="flex items-start gap-2 text-xs text-zinc-500 italic bg-white/5 p-2 rounded-lg border border-white/5">
+                                <Quote className="w-3 h-3 flex-shrink-0 mt-0.5 opacity-50" />
+                                {link.context}
+                              </div>
                             )}
+
                             {link.relevanceScore !== undefined && (
-                              <div className="flex items-center gap-2 mt-2">
-                                <span className="text-xs text-muted-foreground">Relevance:</span>
-                                <div className="h-2 flex-1 max-w-[140px] bg-muted rounded-full overflow-hidden">
-                                  <div className={cn("h-full rounded-full transition-all", link.relevanceScore >= 70 ? "bg-green-500" : link.relevanceScore >= 40 ? "bg-yellow-500" : "bg-red-500")} style={{ width: `${link.relevanceScore}%` }} />
+                              <div className="flex items-center gap-3 mt-3">
+                                <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Relevance</span>
+                                <div className="h-2 flex-1 max-w-[200px] bg-black/40 rounded-full overflow-hidden border border-white/5">
+                                  <div className={cn("h-full rounded-full transition-all shadow-[0_0_10px_rgba(0,0,0,0.5)]", link.relevanceScore >= 70 ? "bg-emerald-500" : link.relevanceScore >= 40 ? "bg-yellow-500" : "bg-red-500")} style={{ width: `${link.relevanceScore}%` }} />
                                 </div>
-                                <span className={cn("text-xs font-semibold", link.relevanceScore >= 70 ? "text-green-400" : link.relevanceScore >= 40 ? "text-yellow-400" : "text-red-400")}>{link.relevanceScore}%</span>
+                                <span className={cn("text-xs font-bold", link.relevanceScore >= 70 ? "text-emerald-400" : link.relevanceScore >= 40 ? "text-yellow-400" : "text-red-400")}>{link.relevanceScore}%</span>
                               </div>
                             )}
                           </div>
-                          <a href={link.targetUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-muted/50">
-                            <ExternalLink className="w-4 h-4" />
+                          <a href={link.targetUrl} target="_blank" rel="noopener noreferrer" className="p-3 bg-black/20 text-zinc-400 hover:text-white hover:bg-primary/20 transition-all rounded-xl border border-white/5 group-hover:border-primary/20">
+                            <ExternalLink className="w-5 h-5" />
                           </a>
                         </div>
                       ))}
                     </div>
                   ) : contentLinks.length > 0 ? (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {contentLinks.map((link, i) => (
-                        <div key={i} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg text-sm hover:bg-muted/30 transition-colors">
-                          <span className="text-primary font-medium">{link.text}</span>
-                          <span className="text-muted-foreground truncate max-w-[300px] ml-4 font-mono text-xs">{link.url}</span>
+                        <div key={i} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition-colors group">
+                          <span className="text-white font-bold group-hover:text-primary transition-colors">{link.text}</span>
+                          <span className="text-zinc-500 truncate max-w-[400px] ml-4 font-mono text-xs bg-black/20 px-3 py-1 rounded-lg">{link.url}</span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-muted-foreground text-sm text-center py-8">No internal links found in this content.</p>
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                        <Link2 className="w-8 h-8 text-zinc-600" />
+                      </div>
+                      <p className="text-zinc-500 text-lg">No internal links found in this content.</p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -696,22 +810,35 @@ export function ContentViewerPanel({
 
             {/* ────── SCHEMA TAB ────── */}
             {activeTab === 'schema' && (
-              <div className="p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-primary" />Schema.org Structured Data
+              <div className="p-8 max-w-7xl mx-auto space-y-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                    <div className="p-2 bg-blue-500/20 rounded-xl">
+                      <Shield className="w-5 h-5 text-blue-400" />
+                    </div>
+                    Schema.org Structured Data
                   </h3>
                   <button onClick={() => { navigator.clipboard.writeText(JSON.stringify(generatedContent?.schema || {}, null, 2)); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 text-primary rounded-lg text-sm hover:bg-primary/30 transition-all">
-                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}Copy Schema
+                    className="flex items-center gap-2.5 px-4 py-2 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-xl text-sm font-bold hover:bg-blue-500/20 transition-all shadow-lg shadow-blue-500/5">
+                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}Copy JSON-LD
                   </button>
                 </div>
                 {generatedContent?.schema ? (
-                  <pre className="bg-muted/20 border border-border p-4 rounded-xl overflow-auto text-sm text-foreground font-mono whitespace-pre-wrap max-h-[60vh]">
-                    {JSON.stringify(generatedContent.schema, null, 2)}
-                  </pre>
+                  <div className="glass-card border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative group">
+                    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="px-2 py-1 bg-white/10 text-white text-[10px] font-bold rounded uppercase tracking-wider backdrop-blur-md">JSON-LD</span>
+                    </div>
+                    <pre className="p-6 overflow-auto text-sm text-blue-300 font-mono whitespace-pre-wrap max-h-[65vh] custom-scrollbar bg-black/20 shadow-inner leading-relaxed">
+                      {JSON.stringify(generatedContent.schema, null, 2)}
+                    </pre>
+                  </div>
                 ) : (
-                  <p className="text-muted-foreground text-sm text-center py-12">No schema data available for this content.</p>
+                  <div className="glass-card border border-white/10 rounded-3xl p-16 flex flex-col items-center justify-center text-center">
+                    <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mb-6">
+                      <Shield className="w-10 h-10 text-zinc-600" />
+                    </div>
+                    <p className="text-zinc-500 text-lg">No schema data available for this content.</p>
+                  </div>
                 )}
               </div>
             )}
@@ -730,52 +857,63 @@ export function ContentViewerPanel({
 
       {/* ═══════════════ PUBLISH MODAL ═══════════════ */}
       {showPublishModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => setShowPublishModal(false)}>
-          <div className="bg-card border border-border rounded-2xl w-full max-w-lg p-6 space-y-5" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-foreground flex items-center gap-2"><Upload className="w-5 h-5 text-primary" />Publish to WordPress</h3>
-              <button onClick={() => setShowPublishModal(false)} className="p-1 text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[60] flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={() => setShowPublishModal(false)}>
+          <div className="glass-card border border-white/10 rounded-3xl w-full max-w-lg p-8 space-y-6 shadow-2xl relative overflow-hidden ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -z-10 -translate-y-1/2 translate-x-1/2" />
+
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                <div className="p-2.5 bg-primary/20 rounded-xl border border-primary/20 shadow-inner">
+                  <Upload className="w-5 h-5 text-primary" />
+                </div>
+                Publish to WordPress
+              </h3>
+              <button onClick={() => setShowPublishModal(false)} className="p-2 text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-all"><X className="w-5 h-5" /></button>
             </div>
+
             {!isConfigured && (
-              <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-yellow-400 text-sm flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                WordPress is not configured. Go to Setup tab to add your credentials.
+              <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-yellow-400 text-sm flex items-start gap-3 shadow-sm">
+                <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                <span className="font-medium">WordPress is not configured. Go to Setup tab to add your credentials.</span>
               </div>
             )}
+
             {isEditorDirty && (
-              <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg text-blue-400 text-sm flex items-start gap-2">
-                <Edit3 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                You have unsaved editor changes. The <strong>edited version</strong> will be published.
+              <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400 text-sm flex items-start gap-3 shadow-sm">
+                <Edit3 className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                <span className="font-medium">You have unsaved editor changes. The <strong>edited version</strong> will be published.</span>
               </div>
             )}
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm text-muted-foreground">Post Status</label>
-                <div className="flex gap-2 mt-1">
-                  <button onClick={() => setPublishStatus('draft')} className={cn("px-4 py-2 rounded-lg text-sm font-medium transition-all", publishStatus === 'draft' ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground")}>Draft</button>
-                  <button onClick={() => setPublishStatus('publish')} className={cn("px-4 py-2 rounded-lg text-sm font-medium transition-all", publishStatus === 'publish' ? "bg-green-600 text-white" : "bg-muted text-muted-foreground hover:text-foreground")}>Publish</button>
+
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider ml-1">Post Status</label>
+                <div className="flex bg-black/20 p-1.5 rounded-xl border border-white/10">
+                  <button onClick={() => setPublishStatus('draft')} className={cn("flex-1 py-2.5 rounded-lg text-sm font-bold transition-all", publishStatus === 'draft' ? "bg-white/10 text-white shadow-sm border border-white/5" : "text-zinc-500 hover:text-zinc-300")}>Draft</button>
+                  <button onClick={() => setPublishStatus('publish')} className={cn("flex-1 py-2.5 rounded-lg text-sm font-bold transition-all", publishStatus === 'publish' ? "bg-green-600 text-white shadow-lg shadow-green-600/20" : "text-zinc-500 hover:text-zinc-300")}>Publish Live</button>
                 </div>
               </div>
-              <div>
-                <label className="text-sm text-muted-foreground">URL Slug</label>
-                <p className="text-sm text-primary font-mono mt-1">/{effectivePublishSlug}</p>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider ml-1">URL Slug</label>
+                <div className="px-4 py-3 bg-black/20 border border-white/10 rounded-xl font-mono text-sm text-primary flex items-center gap-2">
+                  <span className="text-zinc-600">/</span>{effectivePublishSlug}
+                </div>
               </div>
+
               {generatedContent?.seoTitle && (
-                <div>
-                  <label className="text-sm text-muted-foreground">SEO Title</label>
-                  <p className="text-sm text-foreground mt-1">{generatedContent.seoTitle}</p>
-                </div>
-              )}
-              {generatedContent?.metaDescription && (
-                <div>
-                  <label className="text-sm text-muted-foreground">Meta Description</label>
-                  <p className="text-sm text-foreground mt-1 line-clamp-2">{generatedContent.metaDescription}</p>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider ml-1">SEO Title</label>
+                  <div className="px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-sm text-zinc-300">
+                    {generatedContent.seoTitle}
+                  </div>
                 </div>
               )}
             </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <button onClick={() => setShowPublishModal(false)} className="px-4 py-2 bg-muted text-foreground rounded-lg text-sm hover:bg-muted/80 transition-all">Cancel</button>
-              <button onClick={handlePublishToWordPress} disabled={isPublishing || !isConfigured} className="px-6 py-2 bg-primary text-primary-foreground font-semibold rounded-lg text-sm hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center gap-2">
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+              <button onClick={() => setShowPublishModal(false)} className="px-5 py-2.5 bg-white/5 text-zinc-300 rounded-xl text-sm font-bold hover:bg-white/10 transition-all border border-white/5">Cancel</button>
+              <button onClick={handlePublishToWordPress} disabled={isPublishing || !isConfigured} className="px-6 py-2.5 bg-gradient-to-r from-primary to-emerald-600 text-white font-bold rounded-xl text-sm hover:shadow-lg hover:shadow-primary/25 transition-all disabled:opacity-50 disabled:shadow-none flex items-center gap-2 transform active:scale-95">
                 {isPublishing ? <><Loader2 className="w-4 h-4 animate-spin" />Publishing...</> : <><Upload className="w-4 h-4" />Publish {publishStatus === 'publish' ? 'Now' : 'as Draft'}</>}
               </button>
             </div>
@@ -847,102 +985,128 @@ function NeuronWriterTab({ neuronData, content, neuronLiveScore }: NeuronWriterT
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-8 max-w-7xl mx-auto space-y-8">
 
       {/* ── Score Overview Card ── */}
-      <div className="bg-card/50 border border-border rounded-xl p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <Brain className="w-5 h-5 text-purple-400" />NeuronWriter Score
+      <div className="glass-card border border-white/10 rounded-3xl p-8 relative overflow-hidden shadow-2xl group hover:border-white/20 transition-all">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl -z-10 -translate-y-1/2 translate-x-1/3" />
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-xl font-bold text-white flex items-center gap-3">
+            <div className="p-2 bg-purple-500/20 rounded-xl border border-purple-500/20 shadow-inner">
+              <Brain className="w-5 h-5 text-purple-400" />
+            </div>
+            NeuronWriter Score
           </h3>
           {neuronData.keyword && (
-            <span className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-lg text-sm font-medium">
-              &quot;{neuronData.keyword}&quot;
-            </span>
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-zinc-500 mb-1">Target Keyword</span>
+              <span className="px-4 py-1.5 bg-purple-500/10 text-purple-300 border border-purple-500/20 rounded-xl text-sm font-bold shadow-sm">
+                &quot;{neuronData.keyword}&quot;
+              </span>
+            </div>
           )}
         </div>
+
         {neuronLiveScore ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="col-span-2 md:col-span-1">
-              <div className="relative w-24 h-24 mx-auto">
-                <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="42" stroke="currentColor" className="text-muted/30" strokeWidth="8" fill="none" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="col-span-1 lg:col-span-1 flex justify-center py-2">
+              <div className="relative w-32 h-32 mx-auto filter drop-shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+                <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="42" stroke="currentColor" className="text-white/5" strokeWidth="6" fill="none" />
                   <circle cx="50" cy="50" r="42" stroke="currentColor"
-                    className={cn(neuronLiveScore.score >= 90 ? "text-green-500" : neuronLiveScore.score >= 70 ? "text-yellow-500" : "text-red-500")}
-                    strokeWidth="8" fill="none" strokeDasharray={`${neuronLiveScore.score * 2.64} 264`} strokeLinecap="round"
+                    className={cn("transition-all duration-1000 ease-out", neuronLiveScore.score >= 90 ? "text-emerald-500" : neuronLiveScore.score >= 70 ? "text-amber-500" : "text-red-500")}
+                    strokeWidth="6" fill="none" strokeDasharray={`${neuronLiveScore.score * 2.64} 264`} strokeLinecap="round"
                   />
                 </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className={cn("text-2xl font-bold", neuronLiveScore.score >= 90 ? "text-green-400" : neuronLiveScore.score >= 70 ? "text-yellow-400" : "text-red-400")}>
-                    {neuronLiveScore.score}%
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className={cn("text-3xl font-bold", neuronLiveScore.score >= 90 ? "text-emerald-400" : neuronLiveScore.score >= 70 ? "text-amber-400" : "text-red-400")}>
+                    {neuronLiveScore.score}
                   </span>
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-zinc-500 mt-1">Score</span>
                 </div>
               </div>
             </div>
-            <div className="flex flex-col justify-center">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-3 h-3 rounded-full bg-green-500" />
-                <span className="text-sm text-muted-foreground">Optimal</span>
+
+            <div className="flex flex-col justify-center p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Optimal Terms</span>
               </div>
-              <span className="text-2xl font-bold text-green-400">{neuronLiveScore.optimal.length}</span>
+              <span className="text-3xl font-bold text-emerald-400">{neuronLiveScore.optimal.length}</span>
+              <div className="h-1 w-full bg-black/20 rounded-full mt-3 overflow-hidden">
+                <div className="h-full bg-emerald-500/50 rounded-full" style={{ width: `${(neuronLiveScore.optimal.length / (neuronLiveScore.optimal.length + neuronLiveScore.underused.length + neuronLiveScore.missing.length)) * 100}%` }} />
+              </div>
             </div>
-            <div className="flex flex-col justify-center">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                <span className="text-sm text-muted-foreground">Underused</span>
+
+            <div className="flex flex-col justify-center p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Underused</span>
               </div>
-              <span className="text-2xl font-bold text-yellow-400">{neuronLiveScore.underused.length}</span>
+              <span className="text-3xl font-bold text-amber-400">{neuronLiveScore.underused.length}</span>
+              <div className="h-1 w-full bg-black/20 rounded-full mt-3 overflow-hidden">
+                <div className="h-full bg-amber-500/50 rounded-full" style={{ width: `${(neuronLiveScore.underused.length / (neuronLiveScore.optimal.length + neuronLiveScore.underused.length + neuronLiveScore.missing.length)) * 100}%` }} />
+              </div>
             </div>
-            <div className="flex flex-col justify-center">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-3 h-3 rounded-full bg-red-500" />
-                <span className="text-sm text-muted-foreground">Missing</span>
+
+            <div className="flex flex-col justify-center p-4 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Missing</span>
               </div>
-              <span className="text-2xl font-bold text-red-400">{neuronLiveScore.missing.length}</span>
+              <span className="text-3xl font-bold text-red-400">{neuronLiveScore.missing.length}</span>
+              <div className="h-1 w-full bg-black/20 rounded-full mt-3 overflow-hidden">
+                <div className="h-full bg-red-500/50 rounded-full" style={{ width: `${(neuronLiveScore.missing.length / (neuronLiveScore.optimal.length + neuronLiveScore.underused.length + neuronLiveScore.missing.length)) * 100}%` }} />
+              </div>
             </div>
           </div>
         ) : (
-          <p className="text-muted-foreground text-sm">Score data not available.</p>
+          <div className="flex flex-col items-center justify-center py-12 text-center text-zinc-500">
+            <Loader2 className="w-8 h-8 animate-spin mb-3 opacity-50" />
+            <p className="text-sm">Calculating live score...</p>
+          </div>
         )}
 
         {hasStructuredData && neuronData.recommendations && (
-          <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-            <div className="bg-muted/20 rounded-lg p-3">
-              <span className="text-muted-foreground">Target Words</span>
-              <p className="text-foreground font-bold text-lg">{neuronData.recommendations.targetWordCount?.toLocaleString()}</p>
+          <div className="mt-8 pt-6 border-t border-white/10 grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+            <div className="bg-black/20 rounded-xl p-4 border border-white/5">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-zinc-500 block mb-1">Target Words</span>
+              <p className="text-white font-bold text-xl">{neuronData.recommendations.targetWordCount?.toLocaleString()}</p>
             </div>
-            <div className="bg-muted/20 rounded-lg p-3">
-              <span className="text-muted-foreground">Target Score</span>
-              <p className="text-foreground font-bold text-lg">{neuronData.recommendations.targetScore}%</p>
+            <div className="bg-black/20 rounded-xl p-4 border border-white/5">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-zinc-500 block mb-1">Target Score</span>
+              <p className="text-white font-bold text-xl">{neuronData.recommendations.targetScore}%</p>
             </div>
-            <div className="bg-muted/20 rounded-lg p-3">
-              <span className="text-muted-foreground">Min H2 Count</span>
-              <p className="text-foreground font-bold text-lg">{neuronData.recommendations.minH2Count}</p>
+            <div className="bg-black/20 rounded-xl p-4 border border-white/5">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-zinc-500 block mb-1">Min H2 Count</span>
+              <p className="text-white font-bold text-xl">{neuronData.recommendations.minH2Count}</p>
             </div>
-            <div className="bg-muted/20 rounded-lg p-3">
-              <span className="text-muted-foreground">Min H3 Count</span>
-              <p className="text-foreground font-bold text-lg">{neuronData.recommendations.minH3Count}</p>
+            <div className="bg-black/20 rounded-xl p-4 border border-white/5">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-zinc-500 block mb-1">Min H3 Count</span>
+              <p className="text-white font-bold text-xl">{neuronData.recommendations.minH3Count}</p>
             </div>
           </div>
         )}
       </div>
 
       {/* ── Filter Bar ── */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <Filter className="w-4 h-4 text-muted-foreground" />
-        <span className="text-sm text-muted-foreground mr-2">Filter:</span>
+      <div className="glass-card border border-white/10 rounded-2xl p-2 flex items-center gap-2 flex-wrap shadow-lg">
+        <div className="mr-3 px-3 py-1 flex items-center gap-2 border-r border-white/10">
+          <Filter className="w-4 h-4 text-zinc-400" />
+          <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">Filter</span>
+        </div>
         {(['all', 'missing', 'underused', 'optimal'] as const).map(f => (
           <button
             key={f}
             onClick={() => setTermFilter(f)}
             className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize",
+              "px-4 py-2 rounded-xl text-xs font-bold transition-all capitalize border",
               termFilter === f
-                ? f === 'missing' ? "bg-red-500/20 text-red-400 ring-1 ring-red-500/30"
-                  : f === 'underused' ? "bg-yellow-500/20 text-yellow-400 ring-1 ring-yellow-500/30"
-                  : f === 'optimal' ? "bg-green-500/20 text-green-400 ring-1 ring-green-500/30"
-                  : "bg-primary/20 text-primary ring-1 ring-primary/30"
-                : "bg-muted/30 text-muted-foreground hover:text-foreground"
+                ? f === 'missing' ? "bg-red-500/20 text-red-300 border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+                  : f === 'underused' ? "bg-amber-500/20 text-amber-300 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]"
+                    : f === 'optimal' ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+                      : "bg-primary/20 text-primary-300 border-primary/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]"
+                : "bg-transparent text-zinc-400 border-transparent hover:bg-white/5 hover:text-zinc-200"
             )}
           >
             {f}
@@ -952,7 +1116,7 @@ function NeuronWriterTab({ neuronData, content, neuronLiveScore }: NeuronWriterT
 
       {/* ── Structured Sections (new NeuronWriterService data) ── */}
       {hasStructuredData ? (
-        <>
+        <div className="space-y-6">
           {/* Basic Keywords */}
           <NeuronSection title="Basic Keywords" subtitle="High priority — MUST use all" icon={<Target className="w-5 h-5 text-red-400" />} accentColor="red" isExpanded={expandedSections.basic} onToggle={() => toggleSection('basic')} count={neuronData.basicKeywords?.length || 0}>
             <TermGrid terms={neuronData.basicKeywords || []} content={contentLower} filter={termFilter} />
@@ -994,7 +1158,8 @@ function NeuronWriterTab({ neuronData, content, neuronLiveScore }: NeuronWriterT
             <NeuronSection title="Content Gaps" subtitle="Critical missing terms — add these to boost score" icon={<AlertTriangle className="w-5 h-5 text-red-400" />} accentColor="red" isExpanded={expandedSections.gaps} onToggle={() => toggleSection('gaps')} count={neuronData.recommendations.contentGaps.length}>
               <div className="flex flex-wrap gap-2">
                 {neuronData.recommendations.contentGaps.map((term: string, i: number) => (
-                  <span key={i} className="px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-sm font-medium">
+                  <span key={i} className="px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-sm font-bold flex items-center gap-1.5 shadow-[0_0_10px_rgba(239,68,68,0.1)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                     {term}
                   </span>
                 ))}
@@ -1004,34 +1169,42 @@ function NeuronWriterTab({ neuronData, content, neuronLiveScore }: NeuronWriterT
 
           {/* Competitor Data */}
           {neuronData.competitorData && neuronData.competitorData.length > 0 && (
-            <div className="bg-card/50 border border-border rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-primary" />Competitor Analysis
+            <div className="glass-card border border-white/10 rounded-3xl p-8 relative overflow-hidden shadow-xl">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -z-10 -translate-y-1/2 translate-x-1/2" />
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                <div className="p-2 bg-blue-500/20 rounded-xl border border-blue-500/20">
+                  <TrendingUp className="w-5 h-5 text-blue-400" />
+                </div>
+                Competitor Analysis
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-2 px-3 text-muted-foreground font-medium">#</th>
-                      <th className="text-left py-2 px-3 text-muted-foreground font-medium">URL</th>
-                      <th className="text-left py-2 px-3 text-muted-foreground font-medium">Title</th>
-                      <th className="text-right py-2 px-3 text-muted-foreground font-medium">Words</th>
-                      <th className="text-right py-2 px-3 text-muted-foreground font-medium">Score</th>
+                    <tr className="border-b border-white/10">
+                      <th className="text-left py-3 px-4 text-zinc-500 font-bold uppercase tracking-wider text-xs">#</th>
+                      <th className="text-left py-3 px-4 text-zinc-500 font-bold uppercase tracking-wider text-xs">URL</th>
+                      <th className="text-left py-3 px-4 text-zinc-500 font-bold uppercase tracking-wider text-xs">Title</th>
+                      <th className="text-right py-3 px-4 text-zinc-500 font-bold uppercase tracking-wider text-xs">Words</th>
+                      <th className="text-right py-3 px-4 text-zinc-500 font-bold uppercase tracking-wider text-xs">Score</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-white/5">
                     {neuronData.competitorData.slice(0, 10).map((comp: any, i: number) => (
-                      <tr key={i} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                        <td className="py-2 px-3 text-muted-foreground">{i + 1}</td>
-                        <td className="py-2 px-3">
-                          <a href={comp.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate block max-w-[200px]">
+                      <tr key={i} className="hover:bg-white/5 transition-colors group">
+                        <td className="py-3 px-4 text-zinc-500 font-mono text-xs">{i + 1}</td>
+                        <td className="py-3 px-4">
+                          <a href={comp.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-white hover:underline truncate block max-w-[200px] transition-colors">
                             {(() => { try { return new URL(comp.url).hostname; } catch { return comp.url; } })()}
                           </a>
                         </td>
-                        <td className="py-2 px-3 text-foreground truncate max-w-[250px]">{comp.title}</td>
-                        <td className="py-2 px-3 text-right text-muted-foreground">{(comp.wordCount || 0).toLocaleString()}</td>
-                        <td className="py-2 px-3 text-right">
-                          <span className={cn("font-medium", (comp.score || 0) >= 70 ? "text-green-400" : (comp.score || 0) >= 50 ? "text-yellow-400" : "text-muted-foreground")}>{comp.score || 0}%</span>
+                        <td className="py-3 px-4 text-zinc-300 truncate max-w-[250px] group-hover:text-white transition-colors">{comp.title}</td>
+                        <td className="py-3 px-4 text-right text-zinc-400 font-mono">{(comp.wordCount || 0).toLocaleString()}</td>
+                        <td className="py-3 px-4 text-right">
+                          <span className={cn("font-bold px-2 py-0.5 rounded-lg border shadow-sm",
+                            (comp.score || 0) >= 70 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                              (comp.score || 0) >= 50 ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                                "bg-white/5 text-zinc-400 border-white/10"
+                          )}>{comp.score || 0}%</span>
                         </td>
                       </tr>
                     ))}
@@ -1040,12 +1213,15 @@ function NeuronWriterTab({ neuronData, content, neuronLiveScore }: NeuronWriterT
               </div>
             </div>
           )}
-        </>
+        </div>
       ) : (
         /* ── Legacy Flat Terms View (fallback) ── */
-        <div className="bg-card/50 border border-border rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-            <Brain className="w-5 h-5 text-purple-400" />Terms Analysis
+        <div className="glass-card border border-white/10 rounded-3xl p-8 shadow-xl">
+          <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+            <div className="p-2 bg-purple-500/20 rounded-xl">
+              <Brain className="w-5 h-5 text-purple-400" />
+            </div>
+            Terms Analysis
           </h3>
           {legacyTerms.length > 0 ? (
             <div className="space-y-2">
@@ -1055,20 +1231,20 @@ function NeuronWriterTab({ neuronData, content, neuronLiveScore }: NeuronWriterT
                 const isUsed = contentLower.includes(termText.toLowerCase());
                 const count = countTermInContent(termText);
                 return (
-                  <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 hover:bg-muted/30 transition-colors">
-                    <div className="flex items-center gap-2">
-                      <span className={cn("text-sm font-medium", isUsed ? "text-green-400" : "text-foreground")}>{termText}</span>
+                  <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <span className={cn("text-sm font-bold", isUsed ? "text-emerald-400" : "text-zinc-300")}>{termText}</span>
                       {term.weight && (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-muted text-muted-foreground rounded">w:{term.weight}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 bg-black/30 text-zinc-400 rounded border border-white/5">w:{term.weight}</span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
                       {count > 0 && (
-                        <span className="text-xs text-muted-foreground">{count}×</span>
+                        <span className="text-xs text-zinc-500 font-mono">{count}×</span>
                       )}
                       <span className={cn(
-                        "text-xs px-2 py-0.5 rounded-full font-medium",
-                        isUsed ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                        "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border shadow-sm",
+                        isUsed ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"
                       )}>
                         {isUsed ? '✓ Used' : '✗ Missing'}
                       </span>
@@ -1078,7 +1254,12 @@ function NeuronWriterTab({ neuronData, content, neuronLiveScore }: NeuronWriterT
               })}
             </div>
           ) : (
-            <p className="text-muted-foreground text-sm text-center py-8">No NeuronWriter term data available.</p>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                <Brain className="w-8 h-8 text-zinc-600" />
+              </div>
+              <p className="text-zinc-500 text-lg">No NeuronWriter term data available.</p>
+            </div>
           )}
         </div>
       )}
@@ -1090,16 +1271,18 @@ function NeuronWriterTab({ neuronData, content, neuronLiveScore }: NeuronWriterT
 // HELPER COMPONENTS (defined OUTSIDE NeuronWriterTab)
 // ═══════════════════════════════════════════════════════════════════
 
-function QualityMetric({ label, value }: { label: string; value: number }) {
-  const color = value >= 80 ? 'bg-green-500' : value >= 60 ? 'bg-yellow-500' : 'bg-red-500';
+function QualityMetric({ label, value, large }: { label: string; value: number; large?: boolean }) {
+  const color = value >= 80 ? 'bg-emerald-500' : value >= 60 ? 'bg-amber-500' : 'bg-red-500';
+  const textColor = value >= 80 ? 'text-emerald-400' : value >= 60 ? 'text-amber-400' : 'text-red-400';
+
   return (
-    <div>
-      <div className="flex justify-between text-sm mb-1">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="text-foreground font-medium">{value}%</span>
+    <div className={cn("bg-black/20 rounded-xl border border-white/5", large ? "p-5" : "p-3")}>
+      <div className="flex justify-between text-sm mb-2 items-center">
+        <span className={cn("text-zinc-400 font-medium", large && "text-base")}>{label}</span>
+        <span className={cn("font-bold", textColor, large ? "text-2xl" : "text-lg")}>{value}%</span>
       </div>
-      <div className="h-2 bg-muted rounded-full overflow-hidden">
-        <div className={cn("h-full rounded-full transition-all", color)} style={{ width: `${value}%` }} />
+      <div className={cn("bg-black/40 rounded-full overflow-hidden border border-white/5", large ? "h-3" : "h-1.5")}>
+        <div className={cn("h-full rounded-full transition-all shadow-[0_0_10px_rgba(0,0,0,0.3)]", color)} style={{ width: `${value}%` }} />
       </div>
     </div>
   );
@@ -1119,26 +1302,39 @@ interface NeuronSectionProps {
 }
 
 function NeuronSection({ title, subtitle, icon, isExpanded, onToggle, count, children }: NeuronSectionProps) {
+  const accentColors: Record<string, string> = {
+    red: "bg-red-500/20 border-red-500/20 text-red-100",
+    blue: "bg-blue-500/20 border-blue-500/20 text-blue-100",
+    purple: "bg-purple-500/20 border-purple-500/20 text-purple-100",
+    amber: "bg-amber-500/20 border-amber-500/20 text-amber-100",
+    emerald: "bg-emerald-500/20 border-emerald-500/20 text-emerald-100",
+    cyan: "bg-cyan-500/20 border-cyan-500/20 text-cyan-100",
+  };
+
   return (
-    <div className="bg-card/50 border border-border rounded-xl overflow-hidden">
+    <div className="glass-card border border-white/10 rounded-2xl overflow-hidden shadow-lg transition-all hover:border-white/20 hover:shadow-xl">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between p-4 hover:bg-muted/20 transition-colors"
+        className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors group"
       >
-        <div className="flex items-center gap-3">
-          {icon}
+        <div className="flex items-center gap-4">
+          <div className={cn("p-2.5 rounded-xl border transition-all group-hover:scale-110", accentColors[accentColor] || "bg-white/10 border-white/10")}>
+            {icon}
+          </div>
           <div className="text-left">
-            <h4 className="text-sm font-semibold text-foreground">{title}</h4>
-            <p className="text-xs text-muted-foreground">{subtitle}</p>
+            <h4 className="text-base font-bold text-white group-hover:text-primary transition-colors">{title}</h4>
+            <p className="text-xs text-zinc-400 font-medium mt-0.5">{subtitle}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded-full font-medium">{count}</span>
-          {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+        <div className="flex items-center gap-3">
+          <span className="px-2.5 py-0.5 bg-black/30 text-zinc-400 text-xs rounded-lg font-mono border border-white/5">{count}</span>
+          <div className="p-1 rounded-lg bg-white/5 group-hover:bg-white/10 text-zinc-400 transition-all">
+            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </div>
         </div>
       </button>
       {isExpanded && (
-        <div className="px-4 pb-4 border-t border-border pt-3">
+        <div className="px-5 pb-5 border-t border-white/5 pt-5 bg-black/10">
           {children}
         </div>
       )}
@@ -1149,24 +1345,28 @@ function NeuronSection({ title, subtitle, icon, isExpanded, onToggle, count, chi
 // ── Term Grid (for basic/extended/entity terms) ──
 
 interface NeuronWriterTermDataForGrid {
-  term: string;
-  weight: number;
-  recommended: number;
+  term?: string; // made optional to support entities
+  name?: string; // for entities
+  weight?: number;
+  recommended?: number;
 }
 
 interface TermGridProps {
-  terms: NeuronWriterTermDataForGrid[];
+  terms: any[]; // Using any[] to bypass strict check for now, handling mapping inside
   content: string;
   filter: 'all' | 'missing' | 'underused' | 'optimal';
 }
 
 function TermGrid({ terms, content, filter }: TermGridProps) {
   if (!terms || terms.length === 0) {
-    return <p className="text-muted-foreground text-sm text-center py-4">No terms in this category.</p>;
+    return <p className="text-zinc-500 text-sm text-center py-4 italic">No terms in this category.</p>;
   }
 
   const filteredTerms = terms.filter(t => {
-    const termLower = t.term.toLowerCase();
+    const termText = t.term || t.name || "";
+    if (!termText) return false;
+
+    const termLower = termText.toLowerCase();
     const regex = new RegExp(termLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
     const count = (content.match(regex) || []).length;
     const recommended = t.recommended || 1;
@@ -1175,62 +1375,67 @@ function TermGrid({ terms, content, filter }: TermGridProps) {
   });
 
   if (filteredTerms.length === 0) {
-    return <p className="text-muted-foreground text-sm text-center py-4">No terms match the current filter.</p>;
+    return <p className="text-zinc-500 text-sm text-center py-4 italic">No terms match the current filter.</p>;
   }
 
   return (
     <div className="space-y-1.5">
-      <div className="grid grid-cols-[1fr_60px_60px_80px_120px] gap-2 px-3 py-1 text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+      <div className="grid grid-cols-[1fr_60px_60px_80px_120px] gap-2 px-3 py-2 text-[10px] text-zinc-500 uppercase tracking-wider font-bold mb-1 bg-black/20 rounded-lg border border-white/5">
         <span>Term</span>
         <span className="text-center">Weight</span>
         <span className="text-center">Found</span>
         <span className="text-center">Target</span>
         <span className="text-right">Status</span>
       </div>
-      {filteredTerms.map((term, i) => {
-        const termLower = term.term.toLowerCase();
-        const regex = new RegExp(termLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-        const count = (content.match(regex) || []).length;
-        const recommended = term.recommended || 1;
-        const status = count === 0 ? 'missing' : count < recommended ? 'underused' : count <= recommended * 1.5 ? 'optimal' : 'overused';
+      <div className="space-y-1">
+        {filteredTerms.map((term, i) => {
+          const termText = term.term || term.name || "";
+          const termLower = termText.toLowerCase();
+          const regex = new RegExp(termLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+          const count = (content.match(regex) || []).length;
+          const recommended = term.recommended || 1;
+          const status = count === 0 ? 'missing' : count < recommended ? 'underused' : count <= recommended * 1.5 ? 'optimal' : 'overused';
 
-        return (
-          <div key={i} className={cn(
-            "grid grid-cols-[1fr_60px_60px_80px_120px] gap-2 items-center px-3 py-2 rounded-lg text-sm transition-colors",
-            status === 'optimal' ? "bg-green-500/5 hover:bg-green-500/10" :
-            status === 'underused' ? "bg-yellow-500/5 hover:bg-yellow-500/10" :
-            status === 'missing' ? "bg-red-500/5 hover:bg-red-500/10" :
-            "bg-blue-500/5 hover:bg-blue-500/10"
-          )}>
-            <span className={cn("font-medium truncate", status === 'optimal' ? "text-green-400" : status === 'missing' ? "text-red-400" : status === 'underused' ? "text-yellow-400" : "text-blue-400")}>
-              {term.term}
-            </span>
-            <span className="text-center text-muted-foreground text-xs">{term.weight}</span>
-            <span className={cn("text-center font-bold text-xs", count > 0 ? "text-foreground" : "text-red-400")}>
-              {count}
-            </span>
-            <span className="text-center text-muted-foreground text-xs">{recommended}×</span>
-            <div className="flex items-center justify-end gap-1.5">
-              <div className="h-1.5 w-16 bg-muted rounded-full overflow-hidden">
-                <div className={cn("h-full rounded-full transition-all",
-                  status === 'optimal' ? "bg-green-500" :
-                  status === 'underused' ? "bg-yellow-500" :
-                  status === 'missing' ? "bg-red-500" : "bg-blue-500"
-                )} style={{ width: `${Math.min(100, (count / Math.max(1, recommended)) * 100)}%` }} />
-              </div>
-              <span className={cn(
-                "text-[10px] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider whitespace-nowrap",
-                status === 'optimal' ? "bg-green-500/20 text-green-400" :
-                status === 'underused' ? "bg-yellow-500/20 text-yellow-400" :
-                status === 'missing' ? "bg-red-500/20 text-red-400" :
-                "bg-blue-500/20 text-blue-400"
-              )}>
-                {status}
+          return (
+            <div key={i} className={cn(
+              "grid grid-cols-[1fr_60px_60px_80px_120px] gap-2 items-center px-4 py-2.5 rounded-xl text-sm transition-all border group hover:scale-[1.01]",
+              status === 'optimal' ? "bg-emerald-500/5 hover:bg-emerald-500/10 border-emerald-500/10" :
+                status === 'underused' ? "bg-amber-500/5 hover:bg-amber-500/10 border-amber-500/10" :
+                  status === 'missing' ? "bg-red-500/5 hover:bg-red-500/10 border-red-500/10" :
+                    "bg-blue-500/5 hover:bg-blue-500/10 border-blue-500/10"
+            )}>
+              <span className={cn("font-bold truncate", status === 'optimal' ? "text-emerald-400" : status === 'missing' ? "text-red-400" : status === 'underused' ? "text-amber-400" : "text-blue-400")}>
+                {termText}
               </span>
+              <div className="flex justify-center">
+                <span className="text-xs text-zinc-500 font-mono bg-black/20 px-1.5 py-0.5 rounded">{term.weight !== undefined ? term.weight.toFixed(1) : '-'}</span>
+              </div>
+              <span className={cn("text-center font-bold text-xs", count > 0 ? "text-white" : "text-zinc-600")}>
+                {count}
+              </span>
+              <span className="text-center text-zinc-500 text-xs font-mono">{recommended}×</span>
+              <div className="flex items-center justify-end gap-2">
+                <div className="h-1.5 w-12 bg-black/40 rounded-full overflow-hidden hidden sm:block">
+                  <div className={cn("h-full rounded-full transition-all shadow-[0_0_5px_rgba(0,0,0,0.5)]",
+                    status === 'optimal' ? "bg-emerald-500" :
+                      status === 'underused' ? "bg-amber-500" :
+                        status === 'missing' ? "bg-red-500" : "bg-blue-500"
+                  )} style={{ width: `${Math.min(100, (count / Math.max(1, recommended)) * 100)}%` }} />
+                </div>
+                <span className={cn(
+                  "text-[10px] px-1.5 py-0.5 rounded-lg font-bold uppercase tracking-wider whitespace-nowrap border shadow-sm",
+                  status === 'optimal' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                    status === 'underused' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                      status === 'missing' ? "bg-red-500/10 text-red-400 border-red-500/20" :
+                        "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                )}>
+                  {status}
+                </span>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -1246,45 +1451,48 @@ interface NeuronWriterHeadingDataForList {
 
 function HeadingList({ headings }: { headings: NeuronWriterHeadingDataForList[] }) {
   if (!headings || headings.length === 0) {
-    return <p className="text-muted-foreground text-sm text-center py-4">No heading suggestions.</p>;
+    return <p className="text-zinc-500 text-sm text-center py-4 italic">No heading suggestions.</p>;
   }
 
   return (
     <div className="space-y-2">
       {headings.map((h, i) => (
-        <div key={i} className="flex items-start gap-3 p-3 bg-muted/20 rounded-lg hover:bg-muted/30 transition-colors">
+        <div key={i} className="flex items-start gap-3 p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition-colors group">
           <span className={cn(
-            "flex-shrink-0 px-2 py-0.5 rounded font-mono text-xs font-bold uppercase",
-            h.level === 'h1' ? "bg-amber-500/20 text-amber-400" :
-            h.level === 'h2' ? "bg-emerald-500/20 text-emerald-400" :
-            "bg-cyan-500/20 text-cyan-400"
+            "flex-shrink-0 px-2 py-1 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider border shadow-sm",
+            h.level === 'h1' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+              h.level === 'h2' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
           )}>
             {h.level}
           </span>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">{h.text}</p>
+            <p className="text-sm font-bold text-zinc-300 group-hover:text-white transition-colors">{h.text}</p>
             {h.source && (
-              <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{h.source}</p>
+              <p className="text-[10px] text-zinc-500 mt-1 truncate flex items-center gap-1">
+                <Globe className="w-3 h-3 opacity-50" />
+                {h.source}
+              </p>
             )}
           </div>
           {h.relevanceScore !== undefined && (
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              <div className="h-1.5 w-12 bg-muted rounded-full overflow-hidden">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="h-1.5 w-12 bg-black/40 rounded-full overflow-hidden border border-white/5">
                 <div
                   className={cn(
-                    "h-full rounded-full transition-all",
-                    h.relevanceScore >= 80 ? "bg-green-500" :
-                    h.relevanceScore >= 50 ? "bg-yellow-500" :
-                    "bg-red-500"
+                    "h-full rounded-full transition-all shadow-[0_0_5px_rgba(0,0,0,0.5)]",
+                    h.relevanceScore >= 80 ? "bg-emerald-500" :
+                      h.relevanceScore >= 50 ? "bg-amber-500" :
+                        "bg-red-500"
                   )}
                   style={{ width: `${h.relevanceScore}%` }}
                 />
               </div>
               <span className={cn(
-                "text-[10px] font-semibold tabular-nums",
-                h.relevanceScore >= 80 ? "text-green-400" :
-                h.relevanceScore >= 50 ? "text-yellow-400" :
-                "text-red-400"
+                "text-[10px] font-bold tabular-nums",
+                h.relevanceScore >= 80 ? "text-emerald-400" :
+                  h.relevanceScore >= 50 ? "text-amber-400" :
+                    "text-red-400"
               )}>
                 {h.relevanceScore}%
               </span>

@@ -1,51 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;700;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 150 30% 6%;
-    --foreground: 0 0% 98%;
-    --card: 150 20% 10%;
-    --card-foreground: 0 0% 98%;
-    --popover: 150 20% 10%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 145 70% 45%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 150 15% 15%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 150 15% 20%;
-    --muted-foreground: 150 10% 60%;
-    --accent: 145 70% 45%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 84.2% 60.2%;
+    /* Base HSL values - SOTA God Mode Theme */
+    --background: 224 71% 4%;
+    --foreground: 210 40% 98%;
+
+    --card: 224 71% 6%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 224 71% 6%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217 19% 27%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 19% 15%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 262 83% 58%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 150 15% 20%;
-    --input: 150 15% 20%;
-    --ring: 145 70% 45%;
-    --radius: 0.75rem;
+
+    --border: 217 19% 15%;
+    --input: 217 19% 15%;
+    --ring: 160 84% 39%;
+
+    --radius: 1rem;
   }
 
   .dark {
-    --background: 150 30% 6%;
-    --foreground: 0 0% 98%;
-    --card: 150 20% 10%;
-    --card-foreground: 0 0% 98%;
-    --popover: 150 20% 10%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 145 70% 45%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 150 15% 15%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 150 15% 20%;
-    --muted-foreground: 150 10% 60%;
-    --accent: 145 70% 45%;
-    --accent-foreground: 0 0% 98%;
+    --background: 224 71% 4%;
+    --foreground: 210 40% 98%;
+    --card: 224 71% 6%;
+    --card-foreground: 210 40% 98%;
+    --popover: 224 71% 6%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 19% 27%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 19% 15%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 262 83% 58%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 150 15% 20%;
-    --input: 150 15% 20%;
-    --ring: 145 70% 45%;
+    --border: 217 19% 15%;
+    --input: 217 19% 15%;
+    --ring: 160 84% 39%;
   }
 }
 
@@ -55,81 +67,122 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: -0.025em;
   }
 }
 
-.gradient-bg {
-  background: linear-gradient(135deg, 
-    hsl(150, 30%, 6%) 0%, 
-    hsl(150, 40%, 12%) 30%, 
-    hsl(150, 30%, 8%) 60%,
-    hsl(150, 30%, 6%) 100%
-  );
+/* -------------------------------------------------------------------------- */
+/*                               SOTA VISUALS                                 */
+/* -------------------------------------------------------------------------- */
+
+/* Aurora / Space Background */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: 
+    radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.15), transparent 25%);
+  pointer-events: none;
+  z-index: -1;
+  filter: blur(40px);
 }
 
+/* Gradient Text */
 .gradient-text {
-  background: linear-gradient(135deg, hsl(145, 70%, 45%) 0%, hsl(145, 80%, 55%) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  @apply bg-clip-text text-transparent;
+  background-image: linear-gradient(135deg, hsl(var(--primary)) 0%, #34d399 50%, #a78bfa 100%);
+  text-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
 }
 
-
-/* ---------- Premium Enterprise Overrides (SOTA UI) ---------- */
-:root{
-  --radius: 1rem;
+.gradient-bg {
+  background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(224, 71%, 5%) 100%);
 }
 
-/* smoother typography + rendering */
-html { text-rendering: geometricPrecision; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-
-body {
-  background:
-    radial-gradient(1200px 800px at 10% -10%, hsl(var(--primary) / 0.22), transparent 58%),
-    radial-gradient(900px 700px at 92% 8%, hsl(210 90% 60% / 0.18), transparent 55%),
-    radial-gradient(900px 700px at 50% 120%, hsl(280 85% 65% / 0.12), transparent 60%),
-    linear-gradient(180deg, hsl(var(--background)) 0%, hsl(150 30% 5%) 100%);
+/* Glass Card - Ultra Premium */
+.glass-card {
+  @apply backdrop-blur-xl border border-white/10 shadow-2xl;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    inset 0 0 20px rgba(255, 255, 255, 0.02);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* override helper classes (placed last wins) */
-.gradient-bg{
-  background:
-    radial-gradient(1200px 800px at 10% -10%, hsl(var(--primary) / 0.24), transparent 58%),
-    radial-gradient(900px 700px at 92% 8%, hsl(210 90% 60% / 0.18), transparent 55%),
-    radial-gradient(900px 700px at 50% 120%, hsl(280 85% 65% / 0.12), transparent 60%),
-    linear-gradient(180deg, hsl(var(--background)) 0%, hsl(150 30% 5%) 100%);
+.glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.2), 
+    0 10px 10px -5px rgba(0, 0, 0, 0.1),
+    0 0 20px rgba(16, 185, 129, 0.2); /* Green glow */
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
-.gradient-text{
-  background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(210 90% 62%) 45%, hsl(280 85% 68%) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
+/* Buttons */
+button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.glass-card{
-  background: linear-gradient(180deg, hsl(var(--card) / 0.72), hsl(var(--card) / 0.40));
-  border: 1px solid hsl(var(--border) / 0.60);
-  box-shadow:
-    0 1px 0 hsl(var(--foreground) / 0.05) inset,
-    0 20px 60px hsl(0 0% 0% / 0.35);
-  backdrop-filter: blur(14px);
+button:active {
+  transform: scale(0.98);
 }
 
-.premium-ring:focus-visible{
-  outline: none;
-  box-shadow:
-    0 0 0 4px hsl(var(--primary) / 0.22),
-    0 0 0 1px hsl(var(--primary) / 0.55) inset;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-/* subtle premium scrollbar */
-*::-webkit-scrollbar{ width: 10px; height: 10px; }
-*::-webkit-scrollbar-thumb{
-  background: linear-gradient(180deg, hsl(var(--primary) / 0.55), hsl(210 90% 60% / 0.45));
-  border-radius: 999px;
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted rounded-full;
   border: 2px solid hsl(var(--background));
 }
-*::-webkit-scrollbar-track{ background: hsl(var(--background)); }
-/* ------------------------------------------------------------ */
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/50;
+}
+
+/* Animations */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.2); }
+  50% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.5); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s infinite;
+}
+
+.hero-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(closest-side, rgba(16, 185, 129, 0.15), transparent);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: -1;
+}

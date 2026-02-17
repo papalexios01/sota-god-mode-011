@@ -34,36 +34,51 @@ export function ContentPreviewModal({ content, onClose, onPublish }: ContentPrev
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-card border border-border rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+      <div className="glass-card border border-white/10 rounded-3xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl -z-10 -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl -z-10 translate-x-1/2 translate-y-1/2" />
+
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center justify-between p-6 border-b border-white/10 bg-white/5 backdrop-blur-md">
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-foreground truncate">{content.title}</h2>
-            <p className="text-sm text-muted-foreground">
-              {content.metrics.wordCount.toLocaleString()} words • 
-              {content.metrics.estimatedReadTime} min read • 
-              Quality: {content.qualityScore.overall}%
-            </p>
+            <h2 className="text-xl font-bold text-white truncate flex items-center gap-3">
+              <div className="p-2 bg-primary/20 rounded-xl">
+                <Sparkles className="w-5 h-5 text-primary" />
+              </div>
+              {content.title}
+            </h2>
+            <div className="flex items-center gap-4 mt-2 text-sm text-zinc-400">
+              <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-zinc-500" /> {content.metrics.wordCount.toLocaleString()} words</span>
+              <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-zinc-500" /> {content.metrics.estimatedReadTime} min read</span>
+              <span className={cn(
+                "flex items-center gap-1.5 font-medium px-2 py-0.5 rounded-lg border",
+                content.qualityScore.overall >= 80 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+              )}>
+                Quality: {content.qualityScore.overall}%
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 ml-4">
-            <button
-              onClick={handleCopy}
-              className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors"
-              title="Copy HTML"
-            >
-              {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
-            </button>
-            <button
-              onClick={handleDownload}
-              className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors"
-              title="Download HTML"
-            >
-              <Download className="w-5 h-5" />
-            </button>
+          <div className="flex items-center gap-2 ml-6">
+            <div className="flex bg-black/20 p-1 rounded-xl border border-white/5">
+              <button
+                onClick={handleCopy}
+                className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors tooltip"
+                title="Copy HTML"
+              >
+                {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
+              </button>
+              <button
+                onClick={handleDownload}
+                className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors tooltip"
+                title="Download HTML"
+              >
+                <Download className="w-5 h-5" />
+              </button>
+            </div>
             <button
               onClick={onClose}
-              className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors"
+              className="p-2.5 text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-colors border border-white/5 ml-2"
             >
               <X className="w-5 h-5" />
             </button>
@@ -71,91 +86,114 @@ export function ContentPreviewModal({ content, onClose, onPublish }: ContentPrev
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-border">
+        <div className="flex px-6 border-b border-white/10 bg-black/20">
           {(['preview', 'html', 'seo', 'schema'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                "px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
+                "px-6 py-4 text-sm font-bold transition-all relative",
                 activeTab === tab
-                  ? "text-primary border-primary"
-                  : "text-muted-foreground border-transparent hover:text-foreground"
+                  ? "text-primary"
+                  : "text-zinc-500 hover:text-zinc-300"
               )}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {activeTab === tab && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/0 via-primary to-primary/0" />
+              )}
             </button>
           ))}
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-4">
+        <div className="flex-1 overflow-auto p-6 custom-scrollbar bg-black/10">
           {activeTab === 'preview' && (
-            <div 
-              className="prose prose-invert prose-green max-w-none"
+            <div
+              className="prose prose-invert prose-lg max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-a:text-primary prose-img:rounded-2xl prose-pre:bg-black/40 prose-pre:border prose-pre:border-white/10 prose-blockquote:border-l-primary prose-blockquote:bg-white/5 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-lg"
               dangerouslySetInnerHTML={{ __html: content.content }}
             />
           )}
 
           {activeTab === 'html' && (
-            <pre className="bg-muted/30 p-4 rounded-lg overflow-auto text-sm text-foreground font-mono whitespace-pre-wrap">
-              {content.content}
-            </pre>
+            <div className="relative group">
+              <pre className="bg-black/40 border border-white/10 p-6 rounded-2xl overflow-auto text-sm text-zinc-300 font-mono whitespace-pre-wrap custom-scrollbar shadow-inner">
+                {content.content}
+              </pre>
+            </div>
           )}
 
           {activeTab === 'seo' && (
-            <div className="space-y-6">
+            <div className="space-y-6 max-w-4xl mx-auto">
               {/* Meta Info */}
-              <div className="bg-muted/30 rounded-xl p-4 space-y-3">
-                <h3 className="font-semibold text-foreground">Meta Information</h3>
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Title:</span>
-                    <span className="ml-2 text-foreground">{content.title}</span>
-                    <span className={cn(
-                      "ml-2 text-xs px-2 py-0.5 rounded",
-                      content.title.length <= 60 ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"
-                    )}>
-                      {content.title.length}/60 chars
-                    </span>
+              <div className="glass-card border border-white/10 rounded-2xl p-6 space-y-4">
+                <h3 className="font-bold text-white flex items-center gap-2">
+                  <div className="w-1 h-5 bg-primary rounded-full" />
+                  Meta Information
+                </h3>
+                <div className="space-y-4 text-sm">
+                  <div className="space-y-1">
+                    <span className="text-zinc-500 font-medium uppercase tracking-wider text-xs">Title Tag</span>
+                    <div className="flex items-center justify-between bg-black/20 p-3 rounded-xl border border-white/5">
+                      <span className="text-white font-medium">{content.title}</span>
+                      <span className={cn(
+                        "text-xs px-2 py-1 rounded-lg font-mono border",
+                        content.title.length <= 60 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                      )}>
+                        {content.title.length}/60
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Meta Description:</span>
-                    <p className="text-foreground mt-1">{content.metaDescription}</p>
-                    <span className={cn(
-                      "text-xs px-2 py-0.5 rounded",
-                      content.metaDescription.length >= 120 && content.metaDescription.length <= 160 
-                        ? "bg-green-500/20 text-green-400" 
-                        : "bg-yellow-500/20 text-yellow-400"
-                    )}>
-                      {content.metaDescription.length}/160 chars
-                    </span>
+                  <div className="space-y-1">
+                    <span className="text-zinc-500 font-medium uppercase tracking-wider text-xs">Meta Description</span>
+                    <div className="bg-black/20 p-3 rounded-xl border border-white/5">
+                      <p className="text-zinc-300 leading-relaxed">{content.metaDescription}</p>
+                      <div className="flex justify-end mt-2">
+                        <span className={cn(
+                          "text-xs px-2 py-1 rounded-lg font-mono border",
+                          content.metaDescription.length >= 120 && content.metaDescription.length <= 160
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                            : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                        )}>
+                          {content.metaDescription.length}/160
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">URL Slug:</span>
-                    <span className="ml-2 text-primary">/{content.slug}</span>
+                  <div className="space-y-1">
+                    <span className="text-zinc-500 font-medium uppercase tracking-wider text-xs">URL Slug</span>
+                    <div className="bg-black/20 p-3 rounded-xl border border-white/5 text-primary font-mono">
+                      /{content.slug}
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Quality Score Breakdown */}
-              <div className="bg-muted/30 rounded-xl p-4 space-y-3">
-                <h3 className="font-semibold text-foreground">Quality Score Breakdown</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <ScoreBar label="Overall" value={content.qualityScore.overall} />
-                  <ScoreBar label="Readability" value={content.qualityScore.readability} />
-                  <ScoreBar label="SEO" value={content.qualityScore.seo} />
-                  <ScoreBar label="E-E-A-T" value={content.qualityScore.eeat} />
-                  <ScoreBar label="Uniqueness" value={content.qualityScore.uniqueness} />
-                  <ScoreBar label="Fact Accuracy" value={content.qualityScore.factAccuracy} />
+              <div className="glass-card border border-white/10 rounded-2xl p-6 space-y-6">
+                <h3 className="font-bold text-white flex items-center gap-2">
+                  <div className="w-1 h-5 bg-purple-500 rounded-full" />
+                  Quality Analysis
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                  <ScoreBar label="Overall Score" value={content.qualityScore.overall} large />
+                  <div className="grid grid-cols-2 gap-4">
+                    <ScoreBar label="Readability" value={content.qualityScore.readability} />
+                    <ScoreBar label="SEO Optimization" value={content.qualityScore.seo} />
+                    <ScoreBar label="E-E-A-T" value={content.qualityScore.eeat} />
+                    <ScoreBar label="Fact Accuracy" value={content.qualityScore.factAccuracy} />
+                  </div>
                 </div>
+
                 {content.qualityScore.improvements.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <h4 className="text-sm font-medium text-foreground mb-2">Suggested Improvements</h4>
-                    <ul className="space-y-1">
+                  <div className="bg-yellow-500/5 border border-yellow-500/10 rounded-xl p-5">
+                    <h4 className="text-sm font-bold text-yellow-400 mb-3 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" /> Suggested Improvements
+                    </h4>
+                    <ul className="space-y-2">
                       {content.qualityScore.improvements.map((improvement, i) => (
-                        <li key={i} className="text-sm text-yellow-400 flex items-start gap-2">
-                          <span>•</span>
+                        <li key={i} className="text-sm text-zinc-300 flex items-start gap-2.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-yellow-500/50 mt-1.5 flex-shrink-0" />
                           {improvement}
                         </li>
                       ))}
@@ -165,37 +203,45 @@ export function ContentPreviewModal({ content, onClose, onPublish }: ContentPrev
               </div>
 
               {/* Keywords */}
-              <div className="bg-muted/30 rounded-xl p-4 space-y-3">
-                <h3 className="font-semibold text-foreground">Keywords</h3>
-                <div>
-                  <span className="text-muted-foreground text-sm">Primary:</span>
-                  <span className="ml-2 px-3 py-1 bg-primary/20 text-primary rounded-lg text-sm">
-                    {content.primaryKeyword}
-                  </span>
-                </div>
-                {content.secondaryKeywords.length > 0 && (
+              <div className="glass-card border border-white/10 rounded-2xl p-6 space-y-4">
+                <h3 className="font-bold text-white flex items-center gap-2">
+                  <div className="w-1 h-5 bg-blue-500 rounded-full" />
+                  Keywords Strategy
+                </h3>
+                <div className="space-y-4">
                   <div>
-                    <span className="text-muted-foreground text-sm">Secondary:</span>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {content.secondaryKeywords.map((kw, i) => (
-                        <span key={i} className="px-2 py-1 bg-muted text-muted-foreground rounded text-xs">
-                          {kw}
-                        </span>
-                      ))}
-                    </div>
+                    <span className="text-zinc-500 text-xs uppercase tracking-wider font-medium block mb-2">Primary Keyword</span>
+                    <span className="inline-block px-4 py-2 bg-primary/20 text-primary border border-primary/20 rounded-xl font-bold">
+                      {content.primaryKeyword}
+                    </span>
                   </div>
-                )}
+                  {content.secondaryKeywords.length > 0 && (
+                    <div>
+                      <span className="text-zinc-500 text-xs uppercase tracking-wider font-medium block mb-2">Secondary Keywords</span>
+                      <div className="flex flex-wrap gap-2">
+                        {content.secondaryKeywords.map((kw, i) => (
+                          <span key={i} className="px-3 py-1.5 bg-white/5 text-zinc-300 border border-white/5 rounded-lg text-sm hover:bg-white/10 transition-colors">
+                            {kw}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Internal Links */}
               {content.internalLinks.length > 0 && (
-                <div className="bg-muted/30 rounded-xl p-4 space-y-3">
-                  <h3 className="font-semibold text-foreground">Internal Links ({content.internalLinks.length})</h3>
-                  <div className="space-y-2">
+                <div className="glass-card border border-white/10 rounded-2xl p-6 space-y-4">
+                  <h3 className="font-bold text-white flex items-center gap-2">
+                    <div className="w-1 h-5 bg-teal-500 rounded-full" />
+                    Internal Links ({content.internalLinks.length})
+                  </h3>
+                  <div className="bg-black/20 rounded-xl border border-white/5 divide-y divide-white/5">
                     {content.internalLinks.slice(0, 10).map((link, i) => (
-                      <div key={i} className="flex items-center justify-between text-sm">
-                        <span className="text-primary">{link.anchor}</span>
-                        <span className="text-muted-foreground truncate max-w-[200px]">{link.targetUrl}</span>
+                      <div key={i} className="flex items-center justify-between p-3 text-sm hover:bg-white/5 transition-colors">
+                        <span className="text-teal-400 font-medium">{link.anchor}</span>
+                        <span className="text-zinc-500 truncate max-w-[300px] text-xs font-mono">{link.targetUrl}</span>
                       </div>
                     ))}
                   </div>
@@ -205,22 +251,25 @@ export function ContentPreviewModal({ content, onClose, onPublish }: ContentPrev
           )}
 
           {activeTab === 'schema' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-foreground">Schema.org Structured Data</h3>
+            <div className="space-y-4 max-w-4xl mx-auto">
+              <div className="flex items-center justify-between bg-white/5 p-4 rounded-xl border border-white/10">
+                <div>
+                  <h3 className="font-bold text-white">Schema.org Structured Data</h3>
+                  <p className="text-zinc-400 text-sm mt-0.5">JSON-LD format for search engines</p>
+                </div>
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(JSON.stringify(content.schema, null, 2));
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
                   }}
-                  className="flex items-center gap-2 px-3 py-1 bg-muted rounded-lg text-sm text-muted-foreground hover:text-foreground"
+                  className="flex items-center gap-2 px-4 py-2 bg-primary/20 text-primary border border-primary/20 rounded-xl text-sm font-bold hover:bg-primary/30 transition-all"
                 >
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  Copy Schema
+                  Copy JSON
                 </button>
               </div>
-              <pre className="bg-muted/30 p-4 rounded-lg overflow-auto text-sm text-foreground font-mono whitespace-pre-wrap">
+              <pre className="bg-black/40 border border-white/10 p-6 rounded-2xl overflow-auto text-sm text-blue-300 font-mono whitespace-pre-wrap shadow-inner custom-scrollbar">
                 {JSON.stringify(content.schema, null, 2)}
               </pre>
             </div>
@@ -229,18 +278,18 @@ export function ContentPreviewModal({ content, onClose, onPublish }: ContentPrev
 
         {/* Footer */}
         {onPublish && (
-          <div className="p-4 border-t border-border flex justify-end gap-3">
+          <div className="p-6 border-t border-white/10 bg-white/5 backdrop-blur-md flex justify-end gap-4 z-10">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors"
+              className="px-6 py-3 bg-white/5 text-zinc-300 rounded-xl font-bold hover:bg-white/10 transition-all border border-white/5"
             >
-              Close
+              Close Preview
             </button>
             <button
               onClick={() => onPublish(content)}
-              className="px-6 py-2 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2"
+              className="px-8 py-3 bg-gradient-to-r from-primary to-emerald-500 text-white font-bold rounded-xl hover:brightness-110 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transform hover:-translate-y-1"
             >
-              <ExternalLink className="w-4 h-4" />
+              <ExternalLink className="w-5 h-5" />
               Publish to WordPress
             </button>
           </div>
@@ -250,17 +299,21 @@ export function ContentPreviewModal({ content, onClose, onPublish }: ContentPrev
   );
 }
 
-function ScoreBar({ label, value }: { label: string; value: number }) {
-  const color = value >= 80 ? 'bg-green-500' : value >= 60 ? 'bg-yellow-500' : 'bg-red-500';
-  
+function ScoreBar({ label, value, large }: { label: string; value: number, large?: boolean }) {
+  const color = value >= 80 ? 'bg-emerald-500' : value >= 60 ? 'bg-yellow-500' : 'bg-red-500';
+  const progressColor = value >= 80 ? 'from-emerald-500 to-teal-400' : value >= 60 ? 'from-yellow-500 to-orange-400' : 'from-red-500 to-pink-500';
+
   return (
-    <div>
-      <div className="flex justify-between text-sm mb-1">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="text-foreground font-medium">{value}%</span>
+    <div className={large ? "mb-6" : ""}>
+      <div className="flex justify-between text-sm mb-2">
+        <span className={cn("text-zinc-400 font-medium", large && "text-base")}>{label}</span>
+        <span className={cn("font-bold", large ? "text-lg text-white" : "text-zinc-200")}>{value}%</span>
       </div>
-      <div className="h-2 bg-muted rounded-full overflow-hidden">
-        <div className={cn("h-full rounded-full", color)} style={{ width: `${value}%` }} />
+      <div className={cn("bg-black/40 rounded-full overflow-hidden border border-white/5", large ? "h-4" : "h-2")}>
+        <div
+          className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(0,0,0,0.5)]", progressColor)}
+          style={{ width: `${value}%` }}
+        />
       </div>
     </div>
   );

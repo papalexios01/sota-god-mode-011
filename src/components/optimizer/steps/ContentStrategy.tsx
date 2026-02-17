@@ -1,9 +1,9 @@
 import { useRef, useState, useEffect } from "react";
 import { useOptimizerStore } from "@/lib/store";
-import { 
+import {
   BookOpen, FileText, Target, RefreshCw, FolderOpen, Image,
   Zap, Plus, Upload, Link, Trash2, AlertCircle, ArrowRight,
-  BarChart3, Search, Sparkles, Loader2, Bot
+  BarChart3, Search, Sparkles, Loader2, Bot, XCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -24,7 +24,7 @@ const tabs = [
 
 export function ContentStrategy() {
   const [activeTab, setActiveTab] = useState("bulk");
-  const { 
+  const {
     godModeEnabled, setGodModeEnabled,
     priorityOnlyMode, setPriorityOnlyMode,
     priorityUrls, addPriorityUrl, removePriorityUrl,
@@ -92,7 +92,7 @@ export function ContentStrategy() {
       /\/search\/?/i,
       /\?/,  // exclude URLs with query params
     ];
-    
+
     return urls.filter(url => {
       // Must have a path beyond just the domain
       try {
@@ -171,11 +171,11 @@ export function ContentStrategy() {
   const handleCrawlSitemap = async () => {
     if (!sitemapUrl.trim()) return;
 
-     // Cancel any previous run immediately
-     crawlAbortRef.current?.abort();
-     const controller = new AbortController();
-     crawlAbortRef.current = controller;
-     const signal = controller.signal;
+    // Cancel any previous run immediately
+    crawlAbortRef.current?.abort();
+    const controller = new AbortController();
+    crawlAbortRef.current = controller;
+    const signal = controller.signal;
 
     const runId = (crawlRunIdRef.current += 1);
     setIsCrawling(true);
@@ -386,13 +386,13 @@ export function ContentStrategy() {
 
   const handleAddSelectedToRewrite = () => {
     if (selectedUrls.size === 0) return;
-    
+
     selectedUrls.forEach(url => {
       // Extract a title from the URL
       const urlPath = new URL(url).pathname;
       const slug = urlPath.split('/').filter(Boolean).pop() || 'untitled';
       const title = slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-      
+
       addContentItem({
         title: title,
         type: 'refresh',
@@ -401,7 +401,7 @@ export function ContentStrategy() {
         url: url,
       });
     });
-    
+
     toast.success(`Added ${selectedUrls.size} URLs to rewrite queue!`);
     setSelectedUrls(new Set());
     setCurrentStep(3);
@@ -420,25 +420,28 @@ export function ContentStrategy() {
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2 bg-card border border-border rounded-2xl p-2">
+      <div className="flex flex-wrap gap-2 glass-card p-2 backdrop-blur-md">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              "px-4 py-2 rounded-xl text-sm font-medium transition-colors",
+              "px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2",
               activeTab === tab.id
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                ? "bg-primary text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] scale-105"
+                : "text-zinc-400 hover:text-white hover:bg-white/5"
             )}
           >
+            <tab.icon className={cn("w-4 h-4", activeTab === tab.id ? "text-white" : "text-zinc-500 group-hover:text-zinc-300")} />
             {tab.label}
           </button>
         ))}
       </div>
 
       {/* Tab Content */}
-      <div className="bg-card border border-border rounded-2xl p-6">
+      <div className="glass-card p-8 rounded-3xl relative overflow-hidden min-h-[500px]">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10 translate-x-1/3 -translate-y-1/3" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl -z-10 -translate-x-1/3 translate-y-1/3" />
         {activeTab === "bulk" && (
           <div className="space-y-4">
             <div className="flex items-center gap-3">
@@ -453,22 +456,25 @@ export function ContentStrategy() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Broad Topic</label>
-              <input
-                type="text"
-                value={broadTopic}
-                onChange={(e) => setBroadTopic(e.target.value)}
-                placeholder="e.g., 'Sustainable Living' or 'Python Programming'"
-                className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
+              <label className="block text-sm font-medium text-white mb-3">Broad Topic</label>
+              <div className="relative group">
+                <input
+                  type="text"
+                  value={broadTopic}
+                  onChange={(e) => setBroadTopic(e.target.value)}
+                  placeholder="e.g., 'Sustainable Living' or 'Python Programming'"
+                  className="w-full px-5 py-4 bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-300 shadow-inner group-hover:bg-black/30"
+                />
+                <Sparkles className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
+              </div>
             </div>
             <button
               onClick={handleGenerateContentPlan}
               disabled={!broadTopic.trim()}
-              className="w-full px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full px-6 py-4 bg-gradient-to-r from-primary to-emerald-600 text-white font-bold text-lg rounded-2xl hover:brightness-110 disabled:opacity-50 disabled:grayscale transition-all duration-300 shadow-[0_4px_20px_rgba(16,185,129,0.3)] hover:shadow-[0_8px_30px_rgba(16,185,129,0.4)] hover:-translate-y-1 flex items-center justify-center gap-3"
             >
-              <Zap className="w-5 h-5" />
-              🚀 Generate Content Plan
+              <Zap className="w-6 h-6 fill-current" />
+              Generate Content Plan
             </button>
           </div>
         )}
@@ -487,16 +493,18 @@ export function ContentStrategy() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
+              <label className="block text-sm font-medium text-white mb-3">
                 Primary Keywords (one per line)
               </label>
-              <textarea
-                value={keywords}
-                onChange={(e) => setKeywords(e.target.value)}
-                placeholder="best running shoes 2026&#10;how to train for marathon&#10;running injury prevention"
-                rows={5}
-                className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
-              />
+              <div className="relative group">
+                <textarea
+                  value={keywords}
+                  onChange={(e) => setKeywords(e.target.value)}
+                  placeholder="best running shoes 2026&#10;how to train for marathon&#10;running injury prevention"
+                  rows={6}
+                  className="w-full px-5 py-4 bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-300 shadow-inner group-hover:bg-black/30 resize-none"
+                />
+              </div>
             </div>
             <div className="flex gap-3">
               <button
@@ -524,76 +532,81 @@ export function ContentStrategy() {
         {activeTab === "gap" && (
           <div className="space-y-6">
             {/* Priority Only Mode Toggle */}
-            <label className="flex items-center gap-3 cursor-pointer p-4 bg-muted/30 rounded-xl border border-border">
-              <input
-                type="checkbox"
-                checked={priorityOnlyMode}
-                onChange={(e) => setPriorityOnlyMode(e.target.checked)}
-                className="w-5 h-5 rounded border-border text-primary focus:ring-primary/50"
-              />
+            <label className="flex items-center gap-4 cursor-pointer p-6 glass-card rounded-2xl border border-white/5 hover:bg-white/5 transition-all duration-300">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={priorityOnlyMode}
+                  onChange={(e) => setPriorityOnlyMode(e.target.checked)}
+                  className="peer sr-only"
+                />
+                <div className="w-14 h-8 bg-black/40 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-7 after:w-7 after:transition-all peer-checked:bg-primary"></div>
+              </div>
               <div>
-                <span className="font-medium text-foreground">🎯 Priority Only Mode</span>
-                <p className="text-xs text-muted-foreground">
+                <span className="font-bold text-lg text-white block mb-1">🎯 Priority Only Mode</span>
+                <p className="text-sm text-zinc-400">
                   Restricts God Mode to ONLY optimize URLs in your Priority Queue. Ignores sitemap scan.
                 </p>
               </div>
             </label>
 
             {/* Priority URL Queue */}
-            <div className="border border-border rounded-xl p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-semibold text-foreground flex items-center gap-2">
-                  <Target className="w-5 h-5 text-primary" />
+            <div className="glass-card rounded-2xl p-6 border border-white/10">
+              <div className="flex items-center justify-between mb-6">
+                <h4 className="font-bold text-white flex items-center gap-2">
+                  <div className="p-2 bg-primary/20 rounded-lg">
+                    <Target className="w-5 h-5 text-primary" />
+                  </div>
                   PRIORITY URL QUEUE
                 </h4>
-                <span className="text-sm text-muted-foreground">{priorityUrls.length} Total</span>
+                <span className="px-3 py-1 bg-white/5 rounded-full text-xs font-medium text-zinc-400 border border-white/5">{priorityUrls.length} Total</span>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex gap-2">
+              <div className="space-y-4">
+                <div className="flex gap-3">
                   <select
                     value={newPriority}
                     onChange={(e) => setNewPriority(e.target.value as any)}
-                    className="px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground"
+                    className="px-4 py-3 bg-black/20 text-white border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50"
                   >
-                    <option value="critical">critical</option>
-                    <option value="high">high</option>
-                    <option value="medium">medium</option>
-                    <option value="low">low</option>
+                    <option value="critical">Critical</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
                   </select>
                   <input
                     type="url"
                     value={newPriorityUrl}
                     onChange={(e) => setNewPriorityUrl(e.target.value)}
                     placeholder="Enter URL to Optimize"
-                    className="flex-1 px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="flex-1 px-5 py-3 bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                   />
                   <button
                     onClick={handleAddPriorityUrl}
                     disabled={!newPriorityUrl.trim()}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                    className="px-5 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-5 h-5" />
                   </button>
                 </div>
 
                 {priorityUrls.length > 0 && (
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                     {priorityUrls.map(url => (
-                      <div key={url.id} className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-lg text-sm">
+                      <div key={url.id} className="flex items-center gap-3 px-4 py-3 bg-white/5 border border-white/5 rounded-xl text-sm group hover:bg-white/10 transition-colors">
                         <span className={cn(
-                          "px-2 py-0.5 rounded text-xs font-medium",
-                          url.priority === 'critical' && "bg-red-500/20 text-red-400",
-                          url.priority === 'high' && "bg-orange-500/20 text-orange-400",
-                          url.priority === 'medium' && "bg-yellow-500/20 text-yellow-400",
-                          url.priority === 'low' && "bg-green-500/20 text-green-400"
+                          "px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider",
+                          url.priority === 'critical' && "bg-red-500/20 text-red-400 border border-red-500/20",
+                          url.priority === 'high' && "bg-orange-500/20 text-orange-400 border border-orange-500/20",
+                          url.priority === 'medium' && "bg-yellow-500/20 text-yellow-400 border border-yellow-500/20",
+                          url.priority === 'low' && "bg-emerald-500/20 text-emerald-400 border border-emerald-500/20"
                         )}>
                           {url.priority}
                         </span>
-                        <span className="flex-1 truncate text-foreground">{url.url}</span>
-                        <button 
+                        <span className="flex-1 truncate text-zinc-300 font-mono text-xs">{url.url}</span>
+                        <button
                           onClick={() => removePriorityUrl(url.id)}
-                          className="text-muted-foreground hover:text-destructive"
+                          className="text-zinc-500 hover:text-red-400 transition-colors p-2 hover:bg-red-500/10 rounded-lg opacity-0 group-hover:opacity-100"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -601,38 +614,39 @@ export function ContentStrategy() {
                     ))}
                   </div>
                 )}
-
-                <p className="text-xs text-muted-foreground">
-                  💡 Pro Tip: URLs added here will be prioritized over automatic sitemap scanning.
-                </p>
               </div>
             </div>
 
             {/* Exclusion Controls */}
-            <div className="border border-border rounded-xl p-4">
-              <h4 className="font-semibold text-foreground mb-3">🚫 Exclusion Controls</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="glass-card rounded-2xl p-6 border border-white/10">
+              <h4 className="font-bold text-white mb-6 flex items-center gap-2">
+                <div className="p-2 bg-red-500/20 rounded-lg">
+                  <XCircle className="w-5 h-5 text-red-400" />
+                </div>
+                Exclusion Controls
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
+                  <label className="block text-sm font-medium text-zinc-400 mb-3">
                     Exclude URLs (one per line)
                   </label>
                   <textarea
                     value={excludedUrls.join('\n')}
                     onChange={(e) => setExcludedUrls(e.target.value.split('\n').filter(u => u.trim()))}
-                    rows={4}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground resize-none"
+                    rows={5}
+                    className="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 resize-none focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all"
                     placeholder="/privacy-policy&#10;/terms-of-service"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
+                  <label className="block text-sm font-medium text-zinc-400 mb-3">
                     Exclude Categories (one per line)
                   </label>
                   <textarea
                     value={excludedCategories.join('\n')}
                     onChange={(e) => setExcludedCategories(e.target.value.split('\n').filter(c => c.trim()))}
-                    rows={4}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground resize-none"
+                    rows={5}
+                    className="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-sm text-zinc-300 placeholder:text-zinc-600 resize-none focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all"
                     placeholder="uncategorized&#10;archive"
                   />
                 </div>
@@ -672,21 +686,23 @@ export function ContentStrategy() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Post URL to Refresh</label>
-              <input
-                type="url"
-                value={singleUrl}
-                onChange={(e) => setSingleUrl(e.target.value)}
-                placeholder="https://your-site.com/post-to-refresh"
-                className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
+              <label className="block text-sm font-medium text-white mb-3">Post URL to Refresh</label>
+              <div className="relative group">
+                <input
+                  type="url"
+                  value={singleUrl}
+                  onChange={(e) => setSingleUrl(e.target.value)}
+                  placeholder="https://your-site.com/post-to-refresh"
+                  className="w-full px-5 py-4 bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-inner group-hover:bg-black/30"
+                />
+              </div>
             </div>
             <button
               disabled={!singleUrl.trim()}
-              className="w-full px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-lg rounded-2xl hover:brightness-110 disabled:opacity-50 disabled:grayscale transition-all duration-300 shadow-lg shadow-blue-600/20 hover:-translate-y-1 flex items-center justify-center gap-3"
             >
-              <RefreshCw className="w-5 h-5" />
-              🔄 Refresh & Validate
+              <RefreshCw className="w-6 h-6" />
+              Refresh & Validate
             </button>
           </div>
         )}
@@ -705,29 +721,31 @@ export function ContentStrategy() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Sitemap URL</label>
-              <input
-                type="url"
-                value={sitemapUrl}
-                onChange={(e) => setSitemapUrl(e.target.value)}
-                placeholder="https://your-site.com/sitemap.xml"
-                className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
+              <label className="block text-sm font-medium text-white mb-3">Sitemap URL</label>
+              <div className="relative group">
+                <input
+                  type="url"
+                  value={sitemapUrl}
+                  onChange={(e) => setSitemapUrl(e.target.value)}
+                  placeholder="https://your-site.com/sitemap.xml"
+                  className="w-full px-5 py-4 bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-inner group-hover:bg-black/30"
+                />
+              </div>
             </div>
             <button
               onClick={isCrawling ? cancelCrawl : handleCrawlSitemap}
               disabled={!isCrawling && !sitemapUrl.trim()}
-              className="w-full px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl hover:brightness-110 disabled:opacity-50 disabled:grayscale transition-all duration-300 shadow-lg shadow-purple-600/20 hover:-translate-y-1 flex items-center justify-center gap-3"
             >
               {isCrawling ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-6 h-6 animate-spin" />
                   Crawling… ({crawlFoundCount.toLocaleString()} URLs) • Click to stop
                 </>
               ) : (
                 <>
-                  <Search className="w-5 h-5" />
-                  🔍 Crawl Sitemap
+                  <Search className="w-6 h-6" />
+                  Crawl Sitemap
                 </>
               )}
             </button>
@@ -758,7 +776,7 @@ export function ContentStrategy() {
                     </button>
                   </div>
                 </div>
-                
+
                 {selectedUrls.size > 0 && (
                   <div className="mb-3 flex items-center justify-between bg-primary/10 border border-primary/30 rounded-lg px-3 py-2">
                     <span className="text-sm text-primary font-medium">
@@ -773,7 +791,7 @@ export function ContentStrategy() {
                     </button>
                   </div>
                 )}
-                
+
                 <div className="max-h-64 overflow-y-auto space-y-1">
                   {crawledUrls.map((url, idx) => (
                     <label
