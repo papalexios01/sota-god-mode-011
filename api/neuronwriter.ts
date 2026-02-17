@@ -75,7 +75,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       responseData = { raw: responseText.substring(0, 500) };
     }
 
-    return res.status(200).json({
+    // Return actual status from NeuronWriter, not always 200
+    const proxyStatus = response.ok ? 200 : response.status;
+
+    return res.status(proxyStatus).json({
       success: response.ok,
       status: response.status,
       data: responseData,
@@ -84,10 +87,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const message = error instanceof Error ? error.message : "Unknown error";
     const isTimeout = message.includes("abort") || message.includes("timeout");
 
-    return res.status(200).json({
+    // Return proper HTTP status codes so monitoring/logging can detect failures
+    const statusCode = isTimeout ? 408 : 502;
+
+    return res.status(statusCode).json({
       success: false,
-      status: isTimeout ? 408 : 500,
-      error: isTimeout ? "Request timed out. The NeuronWriter API may be slow - try again." : message,
+      status: statusCode,
+      error: isTimeout
+        ? "Request timed out. The NeuronWriter API may be slow - try again."
+        : message,
       type: isTimeout ? "timeout" : "network_error",
     });
   }
