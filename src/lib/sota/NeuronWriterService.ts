@@ -32,39 +32,39 @@ export interface NWApiResponse {
   data?: unknown;
 }
 
+// Shared term data shape used by NeuronWriter analysis and UI components
+export interface NeuronWriterTermData {
+  term: string;
+  type: 'required' | 'recommended' | 'optional';
+  frequency: number;
+  weight: number;
+  usage_pc?: number;
+}
+
+// Shared heading data shape
+export interface NeuronWriterHeadingData {
+  text: string;
+  usage_pc?: number;
+}
+
 export interface NeuronWriterAnalysis {
   query_id?: string;
   status?: string;
   keyword?: string;
   content_score?: number;
   recommended_length?: number;
-  terms?: Array<{
-    term: string;
-    type: 'required' | 'recommended' | 'optional';
-    frequency: number;
-    weight: number;
-    usage_pc?: number;
-  }>;
-  termsExtended?: Array<{
-    term: string;
-    type: 'required' | 'recommended' | 'optional';
-    frequency: number;
-    weight: number;
-    usage_pc?: number;
-  }>;
+  terms?: NeuronWriterTermData[];
+  termsExtended?: NeuronWriterTermData[];
+  // Alias fields used by the UI layer (auto-populated from terms/termsExtended)
+  basicKeywords?: NeuronWriterTermData[];
+  extendedKeywords?: NeuronWriterTermData[];
   entities?: Array<{
     entity: string;
     usage_pc?: number;
     frequency?: number;
   }>;
-  headingsH2?: Array<{
-    text: string;
-    usage_pc?: number;
-  }>;
-  headingsH3?: Array<{
-    text: string;
-    usage_pc?: number;
-  }>;
+  headingsH2?: NeuronWriterHeadingData[];
+  headingsH3?: NeuronWriterHeadingData[];
 }
 
 export interface NeuronWriterQuery {
@@ -171,9 +171,9 @@ export class NeuronWriterService {
         label: 'Supabase edge function',
         headers: this.proxyConfig.supabaseAnonKey
           ? {
-              'Authorization': `Bearer ${this.proxyConfig.supabaseAnonKey}`,
-              'apikey': this.proxyConfig.supabaseAnonKey,
-            }
+            'Authorization': `Bearer ${this.proxyConfig.supabaseAnonKey}`,
+            'apikey': this.proxyConfig.supabaseAnonKey,
+          }
           : undefined,
       });
     }
@@ -419,14 +419,20 @@ export class NeuronWriterService {
       const data = res.data as any;
 
       // Parse the analysis from the response
+      const parsedTerms = this.parseTerms(data.terms || data.basicKeywords || []);
+      const parsedTermsExtended = this.parseTerms(data.termsExtended || data.extendedKeywords || []);
+
       const analysis: NeuronWriterAnalysis = {
         query_id: queryId,
         status: data.status || 'ready',
         keyword: data.keyword,
         content_score: data.content_score || data.contentScore,
         recommended_length: data.recommended_length || data.recommendedLength || 2500,
-        terms: this.parseTerms(data.terms || data.basicKeywords || []),
-        termsExtended: this.parseTerms(data.termsExtended || data.extendedKeywords || []),
+        terms: parsedTerms,
+        termsExtended: parsedTermsExtended,
+        // UI alias fields — always populated from the canonical arrays
+        basicKeywords: parsedTerms,
+        extendedKeywords: parsedTermsExtended,
         entities: this.parseEntities(data.entities || []),
         headingsH2: this.parseHeadings(data.headingsH2 || data.headings_h2 || []),
         headingsH3: this.parseHeadings(data.headingsH3 || data.headings_h3 || []),
@@ -709,6 +715,133 @@ CRITICAL — NeuronWriter score target: 90%+. Every term matters.
 
     return parts.join(', ') || 'Analysis ready';
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STANDALONE SCORING FUNCTION
+// Used by ContentViewerPanel for real-time NeuronWriter score display
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface NeuronWriterLiveScore {
+  score: number;                  // 0-100 overall coverage score
+  basicCoverage: number;          // % of basic terms found
+  extendedCoverage: number;       // % of extended terms found
+  entityCoverage: number;         // % of entities found
+  headingCoverage: number;        // % of recommended H2 headings found
+  missingBasicTerms: string[];    // terms still missing
+  missingEntities: string[];      // entities still missing
+  missingHeadings: string[];      // recommended headings still found
+  totalTerms: number;
+  matchedTerms: number;
+}
+
+/**
+ * Score content against NeuronWriter analysis locally.
+ * Provides a detailed breakdown of term/entity/heading coverage.
+ * Used for the ContentViewerPanel live-scoring sidebar.
+ */
+export function scoreContentAgainstNeuron(
+  html: string,
+  analysis: NeuronWriterAnalysis
+): NeuronWriterLiveScore {
+  if (!html || !analysis) {
+    return {
+      score: 0, basicCoverage: 0, extendedCoverage: 0,
+      entityCoverage: 0, headingCoverage: 0,
+      missingBasicTerms: [], missingEntities: [], missingHeadings: [],
+      totalTerms: 0, matchedTerms: 0,
+    };
+  }
+
+  const text = html.toLowerCase();
+
+  // --- Basic terms scoring (weight: 50%) ---
+  const basicTerms = analysis.basicKeywords || analysis.terms || [];
+  let basicMatched = 0;
+  const missingBasicTerms: string[] = [];
+  for (const t of basicTerms) {
+    const term = (t.term || '').toLowerCase().trim();
+    if (!term) continue;
+    if (text.includes(term)) {
+      basicMatched++;
+    } else {
+      missingBasicTerms.push(t.term);
+    }
+  }
+  const basicCoverage = basicTerms.length > 0
+    ? Math.round((basicMatched / basicTerms.length) * 100)
+    : 100;
+
+  // --- Extended terms scoring (weight: 20%) ---
+  const extTerms = analysis.extendedKeywords || analysis.termsExtended || [];
+  let extMatched = 0;
+  for (const t of extTerms) {
+    const term = (t.term || '').toLowerCase().trim();
+    if (term && text.includes(term)) extMatched++;
+  }
+  const extendedCoverage = extTerms.length > 0
+    ? Math.round((extMatched / extTerms.length) * 100)
+    : 100;
+
+  // --- Entities scoring (weight: 15%) ---
+  const entities = analysis.entities || [];
+  let entityMatched = 0;
+  const missingEntities: string[] = [];
+  for (const e of entities) {
+    const entity = (e.entity || '').toLowerCase().trim();
+    if (!entity) continue;
+    if (text.includes(entity)) {
+      entityMatched++;
+    } else {
+      missingEntities.push(e.entity);
+    }
+  }
+  const entityCoverage = entities.length > 0
+    ? Math.round((entityMatched / entities.length) * 100)
+    : 100;
+
+  // --- Headings scoring (weight: 15%) ---
+  const h2Headings = analysis.headingsH2 || [];
+  let headingMatched = 0;
+  const missingHeadings: string[] = [];
+  for (const h of h2Headings) {
+    const headingText = (h.text || '').toLowerCase().trim();
+    if (!headingText) continue;
+    // Partial match — check first 25 chars for flexibility
+    const snippet = headingText.slice(0, 25);
+    if (text.includes(snippet)) {
+      headingMatched++;
+    } else {
+      missingHeadings.push(h.text);
+    }
+  }
+  const headingCoverage = h2Headings.length > 0
+    ? Math.round((headingMatched / h2Headings.length) * 100)
+    : 100;
+
+  // --- Weighted overall score ---
+  const totalTerms = basicTerms.length + extTerms.length + entities.length + h2Headings.length;
+  const matchedTerms = basicMatched + extMatched + entityMatched + headingMatched;
+
+  const overallScore = Math.min(100, Math.round(
+    (basicCoverage * 0.50) +
+    (extendedCoverage * 0.20) +
+    (entityCoverage * 0.15) +
+    (headingCoverage * 0.15)
+  ));
+
+  return {
+    score: overallScore,
+    basicCoverage,
+    extendedCoverage,
+    entityCoverage,
+    headingCoverage,
+    missingBasicTerms: missingBasicTerms.slice(0, 30),
+    missingEntities: missingEntities.slice(0, 20),
+    missingHeadings: missingHeadings.slice(0, 10),
+    totalTerms,
+    matchedTerms,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
