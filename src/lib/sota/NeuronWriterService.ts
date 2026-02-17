@@ -71,6 +71,10 @@ export interface NeuronWriterQuery {
   id: string;
   keyword: string;
   status: 'pending' | 'processing' | 'ready' | 'error';
+  language?: string;
+  engine?: string;
+  source?: string;
+  tags?: string[];
   created_at?: string;
   updated_at?: string;
 }
@@ -78,6 +82,9 @@ export interface NeuronWriterQuery {
 export interface NeuronWriterProject {
   id: string;
   name: string;
+  language?: string;
+  engine?: string;
+  queries_count?: number;
   created_at?: string;
 }
 
@@ -339,7 +346,40 @@ export class NeuronWriterService {
         return { success: false, error: res.error };
       }
 
-      const projects = (res.data as any)?.projects || [];
+      // NeuronWriter API returns a flat array with "project" key instead of "id":
+      // [{"project": "ed0b47...", "name": "adidas.com", "language": "English", "engine": "google.co.uk"}, ...]
+      const rawData = res.data as any;
+      let rawList: any[] = [];
+
+      if (Array.isArray(rawData)) {
+        // Direct array response (standard NeuronWriter format)
+        rawList = rawData;
+      } else if (rawData?.projects && Array.isArray(rawData.projects)) {
+        // Wrapped format (some proxy implementations)
+        rawList = rawData.projects;
+      } else if (rawData && typeof rawData === 'object') {
+        // Try to find any array in the response
+        const possibleArrays = Object.values(rawData).filter(Array.isArray);
+        if (possibleArrays.length > 0) {
+          rawList = possibleArrays[0] as any[];
+        }
+      }
+
+      // Map NeuronWriter's "project" field to our "id" field
+      const projects: NeuronWriterProject[] = rawList.map((p: any) => ({
+        id: p.project || p.id || '',
+        name: p.name || p.project || 'Unnamed Project',
+        language: p.language,
+        engine: p.engine,
+        queries_count: p.queries_count,
+        created_at: p.created_at || p.created,
+      })).filter((p: NeuronWriterProject) => p.id);
+
+      this.diagSuccess(`Found ${projects.length} projects`);
+      if (projects.length > 0) {
+        this.diagInfo(`Projects: ${projects.map(p => `${p.name} (${p.id})`).join(', ')}`);
+      }
+
       return { success: true, projects };
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -359,17 +399,50 @@ export class NeuronWriterService {
         return { success: false, error: res.error };
       }
 
-      const queries = (res.data as any)?.queries || [];
-      const found = queries.find(
-        (q: any) =>
-          q.keyword.toLowerCase().trim() === keyword.toLowerCase().trim() &&
-          q.status === 'ready'
-      );
+      // NeuronWriter API returns a flat array with "query" key instead of "id":
+      // [{"query": "a6d0fb...", "keyword": "...", "tags": ["Done"], ...}, ...]
+      const rawData = res.data as any;
+      let rawList: any[] = [];
 
-      if (found) {
-        return { success: true, query: found };
+      if (Array.isArray(rawData)) {
+        rawList = rawData;
+      } else if (rawData?.queries && Array.isArray(rawData.queries)) {
+        rawList = rawData.queries;
+      } else if (rawData && typeof rawData === 'object') {
+        const possibleArrays = Object.values(rawData).filter(Array.isArray);
+        if (possibleArrays.length > 0) {
+          rawList = possibleArrays[0] as any[];
+        }
       }
 
+      // Map and find matching query
+      const normalizedKeyword = keyword.toLowerCase().trim();
+      for (const q of rawList) {
+        const qKeyword = (q.keyword || '').toLowerCase().trim();
+        if (qKeyword !== normalizedKeyword) continue;
+
+        // Check if query is ready — NeuronWriter uses "tags" array with "Done"
+        const tags = Array.isArray(q.tags) ? q.tags : [];
+        const isDone = tags.some((t: string) => t.toLowerCase() === 'done') || q.status === 'ready';
+        if (!isDone) continue;
+
+        const mapped: NeuronWriterQuery = {
+          id: q.query || q.id || '',
+          keyword: q.keyword,
+          status: 'ready',
+          language: q.language,
+          engine: q.engine,
+          source: q.source,
+          tags,
+          created_at: q.created_at || q.created,
+          updated_at: q.updated_at || q.updated,
+        };
+
+        this.diagSuccess(`Found existing query for "${keyword}": ${mapped.id}`);
+        return { success: true, query: mapped };
+      }
+
+      this.diagInfo(`No ready query found for "${keyword}" among ${rawList.length} queries`);
       return { success: true, query: undefined };
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -383,19 +456,23 @@ export class NeuronWriterService {
     keyword: string
   ): Promise<{ success: boolean; queryId?: string; error?: string }> {
     try {
+      // NeuronWriter API uses "engine" (e.g. "google.com") and full language names (e.g. "English")
       const res = await this.callProxy('/new-query', {
         project: projectId,
         keyword,
-        language: 'en',
-        search_engine: 'google.com',
+        language: 'English',
+        engine: 'google.com',
       });
 
       if (!res.success) {
         return { success: false, error: res.error };
       }
 
-      const queryId = (res.data as any)?.query_id || (res.data as any)?.id;
+      // NeuronWriter response: {"query": "79ca6b...", "query_url": "...", "share_url": "...", ...}
+      const data = res.data as any;
+      const queryId = data?.query || data?.query_id || data?.id;
       if (!queryId) {
+        this.diagError(`Unexpected createQuery response: ${JSON.stringify(data).substring(0, 300)}`);
         return { success: false, error: 'No query ID returned from NeuronWriter' };
       }
 
